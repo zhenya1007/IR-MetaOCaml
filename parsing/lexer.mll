@@ -461,6 +461,8 @@ rule token = parse
   | "[@@" { LBRACKETATAT }
   | "[@@@" { LBRACKETATATAT }
   | "!"  { BANG }
+  | ".<" { LMETA }
+  | ">." { RMETA }
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
   | "+." { PLUSDOT }

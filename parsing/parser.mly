@@ -358,6 +358,8 @@ let mkctf_attrs d attrs =
 %token LESS
 %token LESSMINUS
 %token LET
+/* ".<" - the left meta-bracket */
+%token LMETA
 %token <string> LIDENT
 %token LPAREN
 %token LBRACKETAT
@@ -389,6 +391,8 @@ let mkctf_attrs d attrs =
 %token RBRACE
 %token RBRACKET
 %token REC
+/* ">." - the right meta-bracket */
+%token RMETA
 %token RPAREN
 %token SEMI
 %token SEMISEMI
@@ -477,7 +481,10 @@ The precedences must be listed from low to high.
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
           LBRACKETPERCENT LBRACKETPERCENTPERCENT
-
+/* meta-brackets are kind of like brackets/parens
+                   , so give them a high precedence
+                   ; I may need to revisit this decision */
+%nonassoc LMETA
 
 /* Entry points */
 
@@ -1176,6 +1183,7 @@ expr:
       { bigarray_set $1 $4 $7 }
   | label LESSMINUS expr
       { mkexp(Pexp_setinstvar(mkrhs $1 1, $3)) }
+<<<<<<< HEAD
   | ASSERT ext_attributes simple_expr %prec below_SHARP
       { mkexp_attrs (Pexp_assert $3) $2 }
   | LAZY ext_attributes simple_expr %prec below_SHARP
@@ -1186,6 +1194,20 @@ expr:
       { unclosed "object" 1 "end" 4 }
   | expr attribute
       { Exp.attr $1 $2 }
+=======
+  | ASSERT simple_expr %prec below_SHARP
+      { mkassert $2 }
+  | LAZY simple_expr %prec below_SHARP
+      { mkexp (Pexp_lazy ($2)) }
+  | OBJECT class_structure END
+      { mkexp (Pexp_object($2)) }
+  | OBJECT class_structure error
+      { unclosed "object" 1 "end" 3 }
+  | LMETA expr RMETA
+      {mkexp (Pexp_code ($2))}
+  | LMETA expr opt_semi error
+      { unclosed ".<" 1 ">." 4 }
+>>>>>>> 346eaa2... Changes to the parser to add the meta-brackets (".<" and ">.").
 ;
 simple_expr:
     val_longident

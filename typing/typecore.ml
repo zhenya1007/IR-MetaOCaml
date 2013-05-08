@@ -159,6 +159,7 @@ let iter_expression f e =
     | Pexp_letmodule (_, me, e) -> expr e; module_expr me
     | Pexp_object { pcstr_fields = fs } -> List.iter class_field fs
     | Pexp_pack me -> module_expr me
+    | Pexp_code _ -> expr e (* FIXME placate the compiler for now *)
 
   and case {pc_lhs = _; pc_guard; pc_rhs} =
     may expr pc_guard;
@@ -2674,6 +2675,18 @@ and type_expect_ ?in_function env sexp ty_expected =
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }
+        (* FIXME: just a kludge to placate the compiler *)
+  | Pexp_code e ->
+      let ty = newgenvar () in
+      let to_unify = Predef.type_lazy_t ty in
+      unify_exp_types loc env to_unify ty_expected;
+      let arg = type_expect env e ty in
+      re {
+        exp_desc = Texp_lazy arg;
+        exp_loc = loc; exp_extra = [];
+        exp_type = instance env ty_expected;
+        exp_env = env;
+      }
   | Pexp_extension ext ->
       raise (Error_forward (Typetexp.error_of_extension ext))
 
@@ -2725,7 +2738,6 @@ and type_function ?in_function loc attrs env ty_expected l caselist =
     exp_type = instance env (newgenty (Tarrow(l, ty_arg, ty_res, Cok)));
     exp_attributes = attrs;
     exp_env = env }
-
 
 and type_label_access env loc srecord lid =
   if !Clflags.principal then begin_def ();

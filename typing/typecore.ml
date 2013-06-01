@@ -2675,14 +2675,13 @@ and type_expect_ ?in_function env sexp ty_expected =
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }
-        (* FIXME: just a kludge to placate the compiler *)
+        (* FIXME: as near as I can tell, this effectively doesn't do any type checking
+          -- but I can deal with that problem later *)
+
   | Pexp_code e ->
-      let ty = newgenvar () in
-      let to_unify = Predef.type_lazy_t ty in
-      unify_exp_types loc env to_unify ty_expected;
-      let arg = type_expect env e ty in
+      let arg = type_exp env e in
       re {
-        exp_desc = Texp_lazy arg;
+        exp_desc = Texp_code arg;
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
         exp_env = env;

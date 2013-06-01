@@ -918,6 +918,9 @@ and transl_exp0 e =
           cl_env = e.exp_env;
           cl_attributes = [];
          }
+        (* FIXME: kludge this for now *)
+  | Texp_code e ->
+    Lprim(Pmakeblock(Obj.custom_tag, Immutable), [transl_exp e])
 
 and transl_list expr_list =
   List.map transl_exp expr_list

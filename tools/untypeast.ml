@@ -351,6 +351,7 @@ and untype_expression exp =
     | Texp_pack (mexpr) ->
         Pexp_pack (untype_module_expr mexpr)
     | Texp_code exp -> Pexp_code (untype_expression exp)
+    | Texp_run exp -> Pexp_run (untype_expression exp)
   in
   List.fold_right untype_extra exp.exp_extra
     (Exp.mk ~loc:exp.exp_loc ~attrs:exp.exp_attributes desc)

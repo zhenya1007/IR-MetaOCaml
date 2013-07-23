@@ -920,7 +920,11 @@ and transl_exp0 e =
          }
         (* FIXME: kludge this for now *)
   | Texp_code e ->
-    Lprim(Pmakeblock(Obj.custom_tag, Immutable), [transl_exp e])
+    let c = transl_exp e in
+    Lcode c
+  | Texp_run e ->
+    let c = transl_exp e in
+    Lprim(Prun, [c])
 
 and transl_list expr_list =
   List.map transl_exp expr_list

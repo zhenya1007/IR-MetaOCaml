@@ -408,6 +408,7 @@ let comp_primitive p args =
   | Pbswap16 -> Kccall("caml_bswap16", 1)
   | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
+  | Prun -> Kccall("metaocaml_run_code", 1)
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max
@@ -814,6 +815,11 @@ let rec comp_expr env exp sz cont =
       end
   | Lifused (_, exp) ->
       comp_expr env exp sz cont
+  | Lcode exp ->
+    let s = Marshal.to_string exp [] in
+    let c = Const_string s in
+    let b = Const_base c in
+    Kconst b :: cont
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
    The values of eN ... e2 are pushed on the stack, e2 at top of stack,

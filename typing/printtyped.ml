@@ -372,8 +372,11 @@ and expression i ppf x =
   | Texp_pack me ->
       line i ppf "Pexp_pack";
       module_expr i ppf me;
-  | Texp_code (e) -> 
+  | Texp_code e -> 
     line i ppf "Pexp_code";
+    expression i ppf e
+  | Texp_run e ->
+    line i ppf "Pexp_run";
     expression i ppf e
 
 and value_description i ppf x =

@@ -463,6 +463,7 @@ rule token = parse
   | "!"  { BANG }
   | ".<" { LMETA }
   | ">." { RMETA }
+  | ".!" { RUN }
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
   | "+." { PLUSDOT }

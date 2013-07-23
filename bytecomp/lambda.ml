@@ -123,6 +123,8 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* run code *)
+  | Prun
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -188,6 +190,7 @@ type lambda =
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
+  | Lcode of lambda
 
 and lambda_switch =
   { sw_numconsts: int;
@@ -362,6 +365,8 @@ let iter f = function
       f lam
   | Lifused (v, e) ->
       f e
+  | Lcode e ->
+    f e
 
 
 module IdentSet =
@@ -393,7 +398,7 @@ let free_ids get l =
     | Lvar _ | Lconst _ | Lapply _
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
     | Lifthenelse _ | Lsequence _ | Lwhile _
-    | Lsend _ | Levent _ | Lifused _ -> ()
+    | Lsend _ | Levent _ | Lifused _ | Lcode _ -> ()
   in free l; !fv
 
 let free_variables l =
@@ -492,6 +497,7 @@ let subst_lambda s lam =
       Lsend (k, subst met, subst obj, List.map subst args, loc)
   | Levent (lam, evt) -> Levent (subst lam, evt)
   | Lifused (v, e) -> Lifused (v, subst e)
+  | Lcode e -> Lcode (subst e)
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
   and subst_strcase (key, case) = (key, subst case)

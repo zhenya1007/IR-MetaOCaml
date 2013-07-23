@@ -394,6 +394,8 @@ let mkctf_attrs d attrs =
 /* ">." - the right meta-bracket */
 %token RMETA
 %token RPAREN
+/* run a piece of code */
+%token RUN
 %token SEMI
 %token SEMISEMI
 %token SHARP
@@ -441,6 +443,7 @@ conflicts.
 The precedences must be listed from low to high.
 */
 
+%right RUN
 %nonassoc IN
 %nonassoc below_SEMI
 %nonassoc SEMI                          /* below EQUAL ({lbl=...; lbl=...}) */
@@ -1183,7 +1186,6 @@ expr:
       { bigarray_set $1 $4 $7 }
   | label LESSMINUS expr
       { mkexp(Pexp_setinstvar(mkrhs $1 1, $3)) }
-<<<<<<< HEAD
   | ASSERT ext_attributes simple_expr %prec below_SHARP
       { mkexp_attrs (Pexp_assert $3) $2 }
   | LAZY ext_attributes simple_expr %prec below_SHARP
@@ -1194,20 +1196,12 @@ expr:
       { unclosed "object" 1 "end" 4 }
   | expr attribute
       { Exp.attr $1 $2 }
-=======
-  | ASSERT simple_expr %prec below_SHARP
-      { mkassert $2 }
-  | LAZY simple_expr %prec below_SHARP
-      { mkexp (Pexp_lazy ($2)) }
-  | OBJECT class_structure END
-      { mkexp (Pexp_object($2)) }
-  | OBJECT class_structure error
-      { unclosed "object" 1 "end" 3 }
   | LMETA expr RMETA
       {mkexp (Pexp_code ($2))}
   | LMETA expr opt_semi error
       { unclosed ".<" 1 ">." 4 }
->>>>>>> 346eaa2... Changes to the parser to add the meta-brackets (".<" and ">.").
+  | RUN expr
+      { mkexp (Pexp_run ($2)) }
 ;
 simple_expr:
     val_longident

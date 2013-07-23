@@ -334,6 +334,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Texp_pack (mexpr) ->
             iter_module_expr mexpr
 	| Texp_code exp -> iter_expression exp
+	| Texp_run exp -> iter_expression exp
       end;
       Iter.leave_expression exp;
 

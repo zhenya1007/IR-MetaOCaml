@@ -123,6 +123,8 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* run code *)
+  | Prun
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -199,6 +201,7 @@ type lambda =
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
+  | Lcode of lambda
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)

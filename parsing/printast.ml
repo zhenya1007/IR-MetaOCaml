@@ -359,9 +359,12 @@ and expression i ppf x =
   | Pexp_extension (s, arg) ->
       line i ppf "Pexp_extension \"%s\"\n" s.txt;
       payload i ppf arg
-  | Pexp_code (e) ->
+  | Pexp_code e ->
       line i ppf "Pexp_code";
-      expression i ppf e;
+      expression i ppf e
+  | Pexp_run e ->
+      line i ppf "Pexp_run";
+      expression i ppf e
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc

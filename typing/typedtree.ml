@@ -106,6 +106,7 @@ and expression_desc =
   | Texp_object of class_structure * string list
   | Texp_pack of module_expr
   | Texp_code of expression
+  | Texp_run of expression
 
 and meth =
     Tmeth_name of string

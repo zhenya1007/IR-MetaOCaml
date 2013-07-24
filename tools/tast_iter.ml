@@ -167,6 +167,8 @@ let expression sub exp =
       sub # class_structure cl
   | Texp_pack (mexpr) ->
       sub # module_expr mexpr
+  | Texp_code exp -> sub # expression exp
+  | Texp_run exp -> sub # expression exp
 
 
 let package_type sub pack =

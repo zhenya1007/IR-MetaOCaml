@@ -1064,6 +1064,8 @@ let simplif_primitive p =
   match p with
   | Pduprecord _ ->
       Pccall (default_prim "caml_obj_dup")
+  | Prun ->
+    Pccall (default_prim "metaocaml_run_code")
   | Pbigarrayref(unsafe, n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
   | Pbigarrayset(unsafe, n, Pbigarray_unknown, layout) ->
@@ -1368,6 +1370,11 @@ let rec transl = function
       end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
+  | Ucode exp ->
+    let s = Marshal.to_string exp [] in
+    let c = Const_string s in
+    let b = Const_base c in
+    transl_constant b
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->

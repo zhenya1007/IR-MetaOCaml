@@ -35,7 +35,6 @@ PUBLIC_INCLUDES=\
   memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h \
   version.h
 
-
 all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED)
 .PHONY: all
 

@@ -175,7 +175,6 @@ let load_lambda ppf lam =
 
 let metaocaml_load_lambda (s : string) = 
     let lam = (Marshal.from_string s 0 : Lambda.lambda) in
-    (* FIXME: using Format.std_formatter below is a kludge *)
     match load_lambda !global_ppf lam with
     | Result v -> v
     | Exception x -> raise x

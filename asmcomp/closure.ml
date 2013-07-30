@@ -83,7 +83,7 @@ let occurs_var var u =
     | Uassign(id, u) -> id = var || occurs u
     | Usend(_, met, obj, args, _) ->
         occurs met || occurs obj || List.exists occurs args
-    | Ucode c -> occurs c
+    | Ucode c -> false (* FIXME: a bit of a kludge for now *)
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do
@@ -228,7 +228,7 @@ let lambda_smaller lam threshold =
     | Usend(_, met, obj, args, _) ->
         size := !size + 8;
         lambda_size met; lambda_size obj; lambda_list_size args
-    | Ucode lam -> lambda_size lam
+    | Ucode lam -> ()
   and lambda_list_size l = List.iter lambda_size l
   and lambda_array_size a = Array.iter lambda_size a in
   try
@@ -622,7 +622,7 @@ let rec substitute fpc sb ulam =
   | Usend(k, u1, u2, ul, dbg) ->
       Usend(k, substitute fpc sb u1, substitute fpc sb u2,
             List.map (substitute fpc sb) ul, dbg)
-  | Ucode c -> Ucode (substitute sb c)
+  | Ucode _ as c -> c
 
 (* Perform an inline expansion *)
 
@@ -1025,11 +1025,7 @@ let rec close fenv cenv = function
   | Lifused _ ->
       assert false
   | Lcode lam ->
-    (* FIXME: is fenv/cenv the correct environment
-       to do closure conversion in? *)
-    let (ulam, approx) = close fenv cenv lam in
-    (Ucode ulam, Value_unknown)
-
+    (Ucode lam, Value_unknown)
 and close_list fenv cenv = function
     [] -> []
   | lam :: rem ->

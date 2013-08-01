@@ -466,4 +466,7 @@ let run_script ppf name args =
   Compmisc.init_path true;
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
+  (* FIXME: find a better place/time to do the registration *)
+  let _ = Callback.register "metaocaml load lambda" metaocaml_load_lambda in
+  global_ppf := ppf; 
   use_silently ppf name

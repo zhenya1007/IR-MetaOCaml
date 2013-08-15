@@ -13,6 +13,10 @@ CAMLprim value metaocaml_run_code(value code)
     /* First time around, look up by name */
     run_code_function = caml_named_value("metaocaml load lambda");
   }
-  result = caml_callback(*run_code_function, code);
-  CAMLreturn(result);
+  if (run_code_function != NULL) {
+     result = caml_callback(*run_code_function, code);
+     CAMLreturn(result);
+  }
+  else
+     caml_failwith("metaocaml_run_code: run_code_function is NULL (did Callback.register not get called?)");
 }

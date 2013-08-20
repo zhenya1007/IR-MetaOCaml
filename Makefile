@@ -107,9 +107,13 @@ OPTSTART=driver/optmain.cmo
 
 TOPLEVELSTART=toplevel/topstart.cmo
 
+METAOCAML=bytecomp/metaocaml.cmo
+
 NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
   toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
   toplevel/opttopmain.cmo toplevel/opttopstart.cmo
+
+NATMETAOCAML=asmcomp/metaocaml.cmx
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
@@ -416,22 +420,21 @@ partialclean::
 	rm -f compilerlibs/ocamltoplevel.cma
 
 ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-       compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART) expunge
-	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp \
+       compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART) $(METAOCAML) expunge
+	$(CAMLC) $(LINKFLAGS)-linkall -o ocaml \
 	  compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-	  compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART)
-	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
-	rm -f ocaml.tmp
+	  compilerlibs/ocamltoplevel.cma $(METAOCAML) $(TOPLEVELSTART) 
+#	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
+#	rm -f ocaml.tmp
 
 partialclean::
 	rm -f ocaml
 
 # The native toplevel
 
-ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
+ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx) $(NATMETAOCAML)
 	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
-	byterun/metaocaml.pic.o \
-	           $(NATTOPOBJS:.cmo=.cmx) -linkall
+		           $(NATTOPOBJS:.cmo=.cmx) $(NATMETAOCAML) -linkall
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 

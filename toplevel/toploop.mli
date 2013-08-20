@@ -115,3 +115,7 @@ val toplevel_startup_hook : (unit -> unit) ref
 (* Used by Trace module *)
 
 val may_trace : bool ref
+
+(* Exposed so metaocaml.ml can call it *)
+type evaluation_outcome = Result of Obj.t | Exception of exn
+val load_lambda : formatter -> Lambda.lambda -> evaluation_outcome

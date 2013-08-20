@@ -21,8 +21,6 @@ open Types
 open Typedtree
 open Outcometree
 
-let global_ppf = ref Format.std_formatter
-
 type res = Ok of Obj.t | Err of string
 type evaluation_outcome = Result of Obj.t | Exception of exn
 
@@ -152,13 +150,6 @@ let load_lambda ppf (size, lam) =
      (should remember the handles, close them in at_exit, and then remove
      files) *)
   res
-
-let metaocaml_load_lambda (s : string) = 
-    let lam = (Marshal.from_string s 0 : Lambda.lambda) in
-    (* FIXME: passing in 0 for size below is a kludge *)
-    match load_lambda !global_ppf (0,lam) with
-    | Result v -> v
-    | Exception x -> raise x
 
 (* Print the outcome of an evaluation *)
 
@@ -435,9 +426,6 @@ let loop ppf =
   Location.input_lexbuf := Some lb;
   Sys.catch_break true;
   load_ocamlinit ppf;
-  (* FIXME: find a better place/time to do the registration *)
-  let _ = Callback.register "metaocaml load lambda" metaocaml_load_lambda in
-  global_ppf := ppf; 
   while true do
     let snap = Btype.snapshot () in
     try
@@ -466,7 +454,4 @@ let run_script ppf name args =
   Compmisc.init_path true;
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
-  (* FIXME: find a better place/time to do the registration *)
-  let _ = Callback.register "metaocaml load lambda" metaocaml_load_lambda in
-  global_ppf := ppf; 
   use_silently ppf name

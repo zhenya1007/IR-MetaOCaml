@@ -22,8 +22,6 @@ open Typedtree
 open Outcometree
 open Ast_helper
 
-let global_ppf = ref Format.std_formatter
-
 type directive_fun =
    | Directive_none of (unit -> unit)
    | Directive_string of (string -> unit)
@@ -172,13 +170,6 @@ let load_lambda ppf lam =
     toplevel_value_bindings := initial_bindings; (* PR#6211 *)
     Symtable.restore_state initial_symtable;
     Exception x
-
-let metaocaml_load_lambda (s : string) = 
-    let lam = (Marshal.from_string s 0 : Lambda.lambda) in
-    match load_lambda !global_ppf lam with
-    | Result v -> v
-    | Exception x -> raise x
-    
 
 (* Print the outcome of an evaluation *)
 
@@ -485,9 +476,6 @@ let loop ppf =
   Location.input_lexbuf := Some lb;
   Sys.catch_break true;
   load_ocamlinit ppf;
-  (* FIXME: find a better place/time to do the registration *)
-  let _ = Callback.register "metaocaml load lambda" metaocaml_load_lambda in
-  global_ppf := ppf; 
   while true do
     let snap = Btype.snapshot () in
     try
@@ -516,7 +504,4 @@ let run_script ppf name args =
   Compmisc.init_path false;
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
-  (* FIXME: find a better place/time to do the registration *)
-  let _ = Callback.register "metaocaml load lambda" metaocaml_load_lambda in
-  global_ppf := ppf; 
   use_silently ppf name

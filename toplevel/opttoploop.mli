@@ -100,3 +100,7 @@ val read_interactive_input : (string -> string -> int -> int * bool) ref
 (* Hooks for initialization *)
 
 val toplevel_startup_hook : (unit -> unit) ref
+
+(* expose these so they can be called from metaocaml.ml *)
+type evaluation_outcome = Result of Obj.t | Exception of exn
+val load_lambda : formatter -> int*Lambda.lambda -> evaluation_outcome

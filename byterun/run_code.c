@@ -3,6 +3,7 @@
 #include "mlvalues.h"
 #include "memory.h"
 #include "callback.h"
+#include "fail.h"
 
 CAMLprim value metaocaml_run_code(value code)
 {
@@ -11,7 +12,7 @@ CAMLprim value metaocaml_run_code(value code)
   CAMLlocal1(result);
   if (run_code_function == NULL) {
     /* First time around, look up by name */
-    run_code_function = caml_named_value("metaocaml load lambda");
+    run_code_function = caml_named_value("Metaocaml.run_code");
   }
   if (run_code_function != NULL) {
      result = caml_callback(*run_code_function, code);

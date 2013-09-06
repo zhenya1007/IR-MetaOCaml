@@ -109,11 +109,14 @@ TOPLEVELSTART=toplevel/topstart.cmo
 
 METAOCAML=bytecomp/metaocaml.cmo
 
-NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
-  toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
-  toplevel/opttopmain.cmo toplevel/opttopstart.cmo
-
 NATMETAOCAML=asmcomp/metaocaml.cmx
+
+NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
+  toplevel/genprintval.cmo toplevel/opttoploop.cmo \
+  toplevel/opttopdirs.cmo toplevel/opttopmain.cmo \
+  $(NATMETAOCAML) \
+  toplevel/opttopstart.cmo
+
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
@@ -432,9 +435,10 @@ partialclean::
 
 # The native toplevel
 
-ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx) $(NATMETAOCAML)
-	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
-		           $(NATTOPOBJS:.cmo=.cmx) $(NATMETAOCAML) -linkall
+ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx) 
+	$(CAMLOPT) $(LINKFLAGS) -I asmrun otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
+			byterun/run_code.pic.o \
+		           $(NATTOPOBJS:.cmo=.cmx) -linkall
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 

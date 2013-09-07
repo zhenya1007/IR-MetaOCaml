@@ -30,7 +30,7 @@ COBJS=startup.o main.o fail.o roots.o globroots.o signals.o signals_asm.o \
 ASMOBJS=$(ARCH).o
 
 OBJS=$(COBJS) $(ASMOBJS)
-DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
+DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS:.o=.d.o)
 POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
 
 all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING)
@@ -184,6 +184,14 @@ clean::
           echo "try producing $*.o by hand.";\
           exit 2; }
 
+
+.S.d.o:
+	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(DFLAGS) -Wa,-L -o $*.d.o $*.S || \
+	{ echo "If your assembler produced syntax errors, it is probably";\
+          echo "unhappy with the preprocessor. Check your assembler, or";\
+          echo "try producing $*.o by hand.";\
+          exit 2; }
+
 .S.p.o:
 	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(ASPPPROFFLAGS) -o $*.p.o $*.S
 
@@ -199,6 +207,9 @@ clean::
 
 .s.o:
 	$(ASPP) -DSYS_$(SYSTEM) -o $*.o $*.s
+
+.s.d.o:
+	$(ASPP) -DSYS_$(SYSTEM) $(DFLAGS) -Wa,-L -o $*.d.o $*.s
 
 .s.p.o:
 	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.s

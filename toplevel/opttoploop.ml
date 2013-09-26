@@ -123,17 +123,15 @@ let toplevel_startup_hook = ref (fun () -> ())
 
 (* Load in-core and execute a lambda term *)
 
-let phrase_seqid = ref 0
-let phrase_name = ref "TOP"
-
 let load_lambda ppf (size, lam) =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
 
+  let unit_name = Compilenv.current_unit_name () in
   let dll =
-    if !Clflags.keep_asm_file then !phrase_name ^ ext_dll
-    else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
+    if !Clflags.keep_asm_file then "caml" ^ unit_name ^ ext_dll
+    else Filename.temp_file ("caml" ^ unit_name) ext_dll
   in
   let fn = Filename.chop_extension dll in
   Asmgen.compile_implementation ~toplevel:need_symbol fn ppf (size, lam);
@@ -144,7 +142,7 @@ let load_lambda ppf (size, lam) =
     if Filename.is_implicit dll
     then Filename.concat (Sys.getcwd ()) dll
     else dll in
-  let res = dll_run dll !phrase_name in
+  let res = dll_run dll unit_name in
   (try Sys.remove dll with Sys_error _ -> ());
   (* note: under windows, cannot remove a loaded dll
      (should remember the handles, close them in at_exit, and then remove
@@ -217,19 +215,21 @@ let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
 
 (* Execute a toplevel phrase *)
 
+let phrase_seqid = ref 0
+
 let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
       incr phrase_seqid;
-      phrase_name := Printf.sprintf "TOP%i" !phrase_seqid;
-      Compilenv.reset ?packname:None !phrase_name;
+      let phrase_name = Printf.sprintf "TOP%i" !phrase_seqid in
+      Compilenv.reset ?packname:None phrase_name;
       Typecore.reset_delayed_checks ();
       let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none
       in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
       Typecore.force_delayed_checks ();
-      let res = Translmod.transl_store_phrases !phrase_name str in
+      let res = Translmod.transl_store_phrases phrase_name str in
       Warnings.check_fatal ();
       begin try
         toplevel_env := newenv;

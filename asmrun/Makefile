@@ -196,14 +196,10 @@ clean::
 	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(ASPPPROFFLAGS) -o $*.p.o $*.S
 
 .c.d.o:
-	ln -s -f $*.c $*.d.c
-	$(CC) -c $(DFLAGS) $*.d.c
-	rm -f $*.d.c
+	$(CC) -c $(DFLAGS) -o $@ $<
 
 .c.p.o:
-	ln -s -f $*.c $*.p.c
-	$(CC) -c $(PFLAGS) $*.p.c
-	rm -f $*.p.c
+	$(CC) -c $(PFLAGS) -o $@ $<
 
 .s.o:
 	$(ASPP) -DSYS_$(SYSTEM) -o $*.o $*.s

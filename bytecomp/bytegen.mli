@@ -18,3 +18,4 @@ open Instruct
 val compile_implementation: string -> lambda -> instruction list
 val compile_phrase: lambda -> instruction list * instruction list
 val reset: unit -> unit
+val compile_for_metaocaml: lambda -> compilation_env -> instruction list * instruction list

@@ -424,9 +424,9 @@ partialclean::
 
 ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
        compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART) $(METAOCAML) expunge
-	$(CAMLC) $(LINKFLAGS)-linkall -o ocaml \
+	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml \
 	  compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-	  compilerlibs/ocamltoplevel.cma $(METAOCAML) $(TOPLEVELSTART) 
+	  compilerlibs/ocamltoplevel.cma $(METAOCAML) byterun/run_code.o $(TOPLEVELSTART) 
 #	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
 #	rm -f ocaml.tmp
 

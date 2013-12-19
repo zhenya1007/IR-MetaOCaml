@@ -827,11 +827,10 @@ let rec comp_expr env exp sz cont =
           | id :: rem -> Ident.add id pos (positions (pos + delta) delta rem) in
     let e = {empty_env with ce_heap = positions 1 1 fv} in
     let s = Marshal.to_string (e, exp) [] in
-    let c = Const_string s in
-    let b = Const_base c in
+    let b = Const_base(Const_string s) in
     Stack.push to_compile functions_to_compile;
     comp_args env (List.map (fun n -> Lvar n) fv) sz
-      (Kclosure(lbl, List.length fv) :: Kpush :: Kconst b :: cont)
+      (Kclosure(lbl, List.length fv) :: Kpush :: Kconst b :: Kmakeblock(2,0) :: cont)
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
    The values of eN ... e2 are pushed on the stack, e2 at top of stack,
@@ -948,14 +947,13 @@ let compile_phrase expr =
   let fun_code = comp_remainder [] in
   (init_code, fun_code)
 
-<<<<<<< HEAD
 let reset () =
   label_counter := 0;
   sz_static_raises := [];
   compunit_name := "";
   Stack.clear functions_to_compile;
   max_stack_used := 0
-=======
+
 let compile_for_metaocaml expr env =
   Stack.clear functions_to_compile;
   label_counter := 0;
@@ -963,4 +961,3 @@ let compile_for_metaocaml expr env =
   let init_code = comp_block env expr 1 [Kreturn 1] in
   let fun_code = comp_remainder [] in
   (init_code, fun_code)
->>>>>>> 3710317... A first take on implementing cross-stage persistence for the bytecode

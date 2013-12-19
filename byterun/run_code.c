@@ -9,16 +9,18 @@
 #include "fix_code.h"
 #include "interp.h"
 
-CAMLprim value metaocaml_run_code(value code, value closure)
+CAMLprim value metaocaml_run_code(value block)
 {
   static value * run_code_function = NULL;
-  CAMLparam2(code, closure);
-  CAMLlocal1(result);
+  CAMLparam1(block);
+  CAMLlocal3(closure, code, result);
   if (run_code_function == NULL) {
     /* First time around, look up by name */
     run_code_function = caml_named_value("Metaocaml.run_code");
   }
   if (run_code_function != NULL) {
+     code = Field(block, 0);
+     closure = Field(block, 1);
      result = caml_callback2(*run_code_function, code, closure);
      CAMLreturn(result);
   }

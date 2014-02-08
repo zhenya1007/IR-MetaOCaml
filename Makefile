@@ -107,9 +107,9 @@ OPTSTART=driver/optmain.cmo
 
 TOPLEVELSTART=toplevel/topstart.cmo
 
-METAOCAML=bytecomp/metaocaml.cmo
+METAOCAML=bytecomp/metaocaml_byte.cmo
 
-NATMETAOCAML=asmcomp/metaocaml.cmx
+NATMETAOCAML=asmcomp/metaocaml_nat.cmx
 
 NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
   toplevel/genprintval.cmo toplevel/opttoploop.cmo \

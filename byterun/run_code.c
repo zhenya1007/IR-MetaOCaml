@@ -9,7 +9,9 @@
 #include "fix_code.h"
 #include "interp.h"
 
-CAMLprim value metaocaml_run_code(value block)
+#ifndef NATIVE_CODE
+
+CAMLprim value metaocaml_run_code(value code, value closure)
 {
   static value * run_code_function = NULL;
   CAMLparam1(block);
@@ -41,3 +43,24 @@ CAMLprim value metaocaml_replace_code(value prog, value len, value clos)
   Code_val(clos) = (code_t) prog;
   return clos;
 }
+
+#else /* NATIVE_CODE */
+
+CAMLprim value metaocaml_run_code(value code)
+{
+  static value * run_code_function = NULL;
+  CAMLparam1(code);
+  CAMLlocal1(result);
+  if (run_code_function == NULL) {
+    /* First time around, look up by name */
+    run_code_function = caml_named_value("Metaocaml.run_code");
+  }
+  if (run_code_function != NULL) {
+     result = caml_callback(*run_code_function, code);
+     CAMLreturn(result);
+  }
+  else
+     caml_failwith("metaocaml_run_code: run_code_function is NULL (did Callback.register not get called?)");
+}
+
+#endif /* ? NATIVE_CODE */

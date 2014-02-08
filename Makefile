@@ -437,7 +437,7 @@ partialclean::
 
 ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx) 
 	$(CAMLOPT) $(LINKFLAGS) -I asmrun otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
-			byterun/run_code.pic.o \
+			asmrun/run_code.o \
 		           $(NATTOPOBJS:.cmo=.cmx) -linkall
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa

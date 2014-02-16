@@ -11,7 +11,7 @@
 
 #ifndef NATIVE_CODE
 
-CAMLprim value metaocaml_run_code(value code, value closure)
+CAMLprim value metaocaml_run_code(value block)
 {
   static value * run_code_function = NULL;
   CAMLparam1(block);

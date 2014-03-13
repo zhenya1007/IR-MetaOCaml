@@ -21,3 +21,7 @@ val compile_phrase :
 type error = Assembler_error of string
 exception Error of error
 val report_error: Format.formatter -> error -> unit
+
+val compile_for_metaocaml :
+    ?toplevel:(string -> bool) ->
+    string -> Format.formatter -> int * Clambda.ulambda -> unit

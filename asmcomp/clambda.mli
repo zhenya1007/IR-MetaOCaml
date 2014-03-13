@@ -53,7 +53,7 @@ type ulambda =
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
   | Uassign of Ident.t * ulambda
   | Usend of meth_kind * ulambda * ulambda * ulambda list * Debuginfo.t
-  | Ucode of Lambda.lambda
+  | Ucode of ulambda
 
 and ufunction = {
   label  : function_label;

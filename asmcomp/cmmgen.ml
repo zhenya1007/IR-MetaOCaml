@@ -1370,11 +1370,19 @@ let rec transl = function
       end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
-  | Ucode exp ->
-    let s = Marshal.to_string exp [] in
-    let c = Const_string s in
-    let b = Const_base c in
-    transl_constant b
+  | Ucode(Uclosure([f], clos_vars)) ->
+    let s = Marshal.to_string f.body [] in
+    let b =  Const_base (Const_string s) in
+    let sc = Compilenv.new_structured_constant b false in (* unfolding transl_const *)
+    let block_size = 3 + List.length clos_vars in
+    let header = alloc_closure_header block_size in
+    let heap_block =
+      Cconst_symbol f.label ::
+      Cconst_symbol sc ::
+      (List.map transl clos_vars)
+    in
+    Cop(Calloc, header :: heap_block)
+  | Ucode _ -> failwith "unhandled Ucode case (is cmmgen.ml out of sync with closure.ml?)"
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->

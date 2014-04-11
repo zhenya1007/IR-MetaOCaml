@@ -17,8 +17,8 @@ CAMLprim value metaocaml_run_code(value block)
   CAMLparam1(block);
   CAMLlocal3(closure, code, result);
   if (run_code_function == NULL) {
-    /* First time around, look up by name */
-    run_code_function = caml_named_value("Metaocaml.run_code");
+     /* First time around, look up by name */
+     run_code_function = caml_named_value("Metaocaml.run_code");
   }
   if (run_code_function != NULL) {
      code = Field(block, 0);
@@ -46,16 +46,30 @@ CAMLprim value metaocaml_replace_code(value prog, value len, value clos)
 
 #else /* NATIVE_CODE */
 
-CAMLprim value metaocaml_run_code(value code)
+CAMLprim value metaocaml_run_code(value block)
 {
   static value * run_code_function = NULL;
-  CAMLparam1(code);
-  CAMLlocal1(result);
+  CAMLparam1(block);
+  CAMLlocal2(code, result);
   if (run_code_function == NULL) {
-    /* First time around, look up by name */
-    run_code_function = caml_named_value("Metaocaml.run_code");
+     /* First time around, look up by name */
+     run_code_function = caml_named_value("Metaocaml.run_code");
   }
   if (run_code_function != NULL) {
+     /* field 0 is the function label */
+     code = Field(block, 1); 
+     Field(block, 1) = Val_long(1); /* c.f. the following code in cmmgen.ml:transl
+				         | Uclosure(fundecls, clos_vars) ->
+					 let block_size =
+					 fundecls_size fundecls + List.length clos_vars in
+					 let rec transl_fundecls pos = function
+					 [...]
+					 if f.arity = 1 then
+					 header ::
+					 Cconst_symbol f.label ::
+					 int_const 1 :: (* <---- *)
+					 transl_fundecls (pos + 3) rem
+				     */
      result = caml_callback(*run_code_function, code);
      CAMLreturn(result);
   }

@@ -1370,18 +1370,22 @@ let rec transl = function
       end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
-  | Ucode(Uclosure([f], clos_vars)) ->
+  | Ucode(Uclosure(([f] as fundecls), clos_vars)) ->
     let s = Marshal.to_string f [] in
     let b =  Const_base (Const_string s) in
-    let sc = Compilenv.new_structured_constant b false in (* unfolding transl_const *)
-    let block_size = 3 + List.length clos_vars in
+    (* unfolding transl_const *)
+    let sc = Compilenv.new_structured_constant b false in
+    let sz = fundecls_size fundecls in
+    let block_size = sz + List.length clos_vars in
     let header = alloc_closure_header block_size in
     let heap_block =
+      header ::
       Cconst_symbol f.label ::
       Cconst_symbol sc ::
       (List.map transl clos_vars)
     in
-    Cop(Calloc, header :: heap_block)
+    if sz <> 3 then failwith "Unexpected size of heap block";
+    Cop(Calloc, heap_block)
   | Ucode _ -> failwith "unhandled Ucode case (is cmmgen.ml out of sync with closure.ml?)"
 
   (* Primitives *)
@@ -2386,6 +2390,33 @@ let compunit_for_metaocaml size uf  =
          Cglobal_symbol glob;
          Cdefine_symbol glob;
          Cskip(size * size_addr)] :: c3
+
+(* FIXME: It's unfortunate that I am cloning compunit: at first blush,
+   it seems that I should be able to make one of the existinc
+   constructs work: I have considered Ulet, and Useq, as well as
+   Ugeneric_apply.  However, none of them quite do what I really want:
+   in fact, all of them "do too much."  I want to _allocate_ the
+   closure which holds the values of the cross-stage persistent
+   variables when the <code> construct is compiled, and to _use_ it
+   when the !run construct is compiled -- but I don't see how to
+   achieve this using any of the existing constructs. *)
+
+let compile_for_metaocaml size = function
+  | {label; arity; params; body; dbg} -> begin
+      let glob = Compilenv.make_symbol None in
+      let init_code = transl (Udirect_apply (label, )) in
+      let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
+                           fun_args = [];
+                           fun_body = init_code; fun_fast = false;
+                           fun_dbg  = Debuginfo.none }] in
+      let c2 = transl_all_functions StringSet.empty c1 in
+      let c3 = emit_all_constants c2 in
+      Cdata [Cint(block_header 0 size);
+             Cglobal_symbol glob;
+             Cdefine_symbol glob;
+             Cskip(size * size_addr)] :: c3
+    end
+  | _ -> failwith "Unexpected input for compile_for_metaocaml"
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)

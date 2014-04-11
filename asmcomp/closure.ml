@@ -1025,10 +1025,9 @@ let rec close fenv cenv = function
   | Lifused _ ->
       assert false
   | Lcode body ->
-    let id = Ident.create "dummy" in
-    let funct = Lfunction(Curried, [id], body) in
-    let (clos, _) = close_one_function fenv cenv (Ident.create "closure") funct in
-    (Ucode(clos), Value_unknown)
+      let funct = Lfunction(Curried, [], body) in
+      let (clos, _) = close_one_function fenv cenv (Ident.create "code") funct in
+      (Ucode clos, Value_unknown)
 
 and close_list fenv cenv = function
     [] -> []

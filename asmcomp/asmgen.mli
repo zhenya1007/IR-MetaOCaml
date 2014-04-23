@@ -24,4 +24,4 @@ val report_error: Format.formatter -> error -> unit
 
 val compile_for_metaocaml :
     ?toplevel:(string -> bool) ->
-    string -> Format.formatter -> int * Clambda.ulambda -> unit
+    string -> Format.formatter -> int * Clambda.ufunction -> unit

@@ -13,6 +13,7 @@
 (* Translation from closed lambda to C-- *)
 
 val compunit: int -> Clambda.ulambda -> Cmm.phrase list
+val compunit_for_metaocaml: int -> Clambda.ufunction -> Cmm.phrase list
 
 val apply_function: int -> Cmm.phrase
 val send_function: int -> Cmm.phrase

@@ -1371,7 +1371,7 @@ let rec transl = function
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
   | Ucode(Uclosure([f], clos_vars)) ->
-    let s = Marshal.to_string f.body [] in
+    let s = Marshal.to_string f [] in
     let b =  Const_base (Const_string s) in
     let sc = Compilenv.new_structured_constant b false in (* unfolding transl_const *)
     let block_size = 3 + List.length clos_vars in
@@ -2362,6 +2362,30 @@ let compunit size ulam =
   Cdata ([Cint(black_block_header 0 size);
          Cglobal_symbol glob;
          Cdefine_symbol glob] @ space) :: c3
+
+
+let compunit_for_metaocaml size uf  =
+  let body = match (List.length uf.params) with
+    (* if we had closed over some free vars, pass in the closure *)
+    | 2 -> Cop(Capply(typ_addr, Debuginfo.none),
+               [Cconst_symbol uf.label; Cconst_int 0; Cconst_symbol uf.label])
+    | 1 -> Cop(Capply(typ_addr, Debuginfo.none),
+               [Cconst_symbol uf.label; Cconst_int 0])
+    | _ -> failwith "unexpected number of arguments to <code> closure"
+  in
+  let glob = Compilenv.make_symbol None in
+  let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
+                       fun_args = [];
+                       fun_body = body;
+                       fun_fast = false;
+                       fun_dbg  = Debuginfo.none }] in
+  let () = Queue.add uf functions in
+  let c2 = transl_all_functions StringSet.empty c1 in
+  let c3 = emit_all_constants c2 in
+  Cdata [Cint(block_header 0 size);
+         Cglobal_symbol glob;
+         Cdefine_symbol glob;
+         Cskip(size * size_addr)] :: c3
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)

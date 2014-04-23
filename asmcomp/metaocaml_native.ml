@@ -27,7 +27,7 @@ let load_ulambda ppf (size, ulam) =
 
 let run_code s =
   let dcmm = !Clflags.dump_cmm in
-  let ulam = (Marshal.from_string s 0 : Clambda.ulambda) in
+  let ulam = (Marshal.from_string s 0 : Clambda.ufunction) in
   try
     (* FIXME: always passing Format.std_formatter here is a kludge *)
 

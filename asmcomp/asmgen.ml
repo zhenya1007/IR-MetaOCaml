@@ -137,7 +137,7 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
   then raise(Error(Assembler_error asmfile));
   if !keep_asm_file then () else remove_file asmfile
 
-let compile_for_metaocaml ?toplevel prefixname ppf (size, ulam) =
+let compile_for_metaocaml ?toplevel prefixname ppf (size, ufunct) =
   let asmfile =
     if !keep_asm_file
     then prefixname ^ ext_asm
@@ -146,7 +146,7 @@ let compile_for_metaocaml ?toplevel prefixname ppf (size, ulam) =
   begin try
     Emitaux.output_channel := oc;
     Emit.begin_assembly();
-    Cmmgen.compunit size ulam
+    Cmmgen.compunit_for_metaocaml size ufunct
     ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
     (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
 

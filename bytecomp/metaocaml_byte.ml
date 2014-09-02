@@ -2,7 +2,7 @@ open Format
 
 (* Copied from meta.ml (the declaration for reify_code), and modified *)
 type closure = unit -> Obj.t (* FIXME: I am pretty sure that, on this side of the Atlantic, they call such a thing "a thunk" *)
-external replace_code: string -> int -> closure -> closure = "metaocaml_replace_code"
+external replace_code: bytes -> int -> closure -> closure = "metaocaml_replace_code"
 
 type evaluation_outcome = Result of Obj.t | Exception of exn
 

@@ -827,7 +827,7 @@ let rec comp_expr env exp sz cont =
           | id :: rem -> Ident.add id pos (positions (pos + delta) delta rem) in
     let e = {empty_env with ce_heap = positions 1 1 fv} in
     let s = Marshal.to_string (e, exp) [] in
-    let b = Const_base(Const_string s) in
+    let b = Const_base(Const_string (s, None)) in
     Stack.push to_compile functions_to_compile;
     comp_args env (List.map (fun n -> Lvar n) fv) sz
       (Kclosure(lbl, List.length fv) :: Kpush :: Kconst b :: Kmakeblock(2,0) :: cont)

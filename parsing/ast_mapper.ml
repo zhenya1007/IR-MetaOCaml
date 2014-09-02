@@ -371,6 +371,8 @@ module E = struct
     | Pexp_open (ovf, lid, e) ->
         open_ ~loc ~attrs ovf (map_loc sub lid) (sub.expr sub e)
     | Pexp_extension x -> extension ~loc ~attrs (sub.extension sub x)
+    | Pexp_code e -> code ~loc ~attrs (sub.expr sub e)
+    | Pexp_run e -> run ~loc ~attrs (sub.expr sub e)
 end
 
 module P = struct

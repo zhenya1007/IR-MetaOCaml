@@ -2686,7 +2686,8 @@ and type_expect_ ?in_function env sexp ty_expected =
       exp_desc = Texp_code arg;
       exp_loc = loc; exp_extra = [];
       exp_type = Predef.type_code arg.exp_type;
-      exp_env = env;
+            exp_attributes = sexp.pexp_attributes;
+  exp_env = env;
     }
   | Pexp_run e ->
     let arg = type_exp env e in
@@ -2697,7 +2698,8 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_run arg;
         exp_loc = loc; exp_extra = [];
         exp_type = ty;
-        exp_env = env;
+         exp_attributes = sexp.pexp_attributes;
+       exp_env = env;
       }
     | _ -> fatal_error "Wrong type of argument to Run."
 

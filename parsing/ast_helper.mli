@@ -141,6 +141,8 @@ module Exp:
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> expression
 
     val case: pattern -> ?guard:expression -> expression -> case
+    val code: ?loc:loc -> ?attrs:attrs -> expression -> expression
+    val run: ?loc:loc -> ?attrs:attrs -> expression -> expression
   end
 
 (** Value declarations *)

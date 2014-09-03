@@ -270,8 +270,9 @@
 /debugger/*.a
 /debugger/*.so
 /debugger/*.obj
-/debugger/*.cm[ioxa]
+/debugger/*.cm[ioxat]
 /debugger/*.cmx[as]
+/debugger/*.cmti
 /debugger/*.annot
 /debugger/*.result
 /debugger/*.byte

@@ -1372,7 +1372,7 @@ let rec transl = function
       transl_letrec bindings (transl body)
   | Ucode(Uclosure(([f] as fundecls), clos_vars)) ->
     let s = Marshal.to_string f [] in
-    let b =  Const_base (Const_string s) in
+    let b =  Uconst_string s in
     (* unfolding transl_const *)
     let sc = Compilenv.new_structured_constant b false in
     let sz = fundecls_size fundecls in
@@ -2402,9 +2402,9 @@ let compunit_for_metaocaml size uf  =
    achieve this using any of the existing constructs. *)
 
 let compile_for_metaocaml size = function
-  | {label; arity; params; body; dbg} -> begin
+  | {label; arity; params; body; dbg} ->
       let glob = Compilenv.make_symbol None in
-      let init_code = transl (Udirect_apply (label, )) in
+      let init_code = transl (Udirect_apply (label, [], Debuginfo.none)) in
       let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
                            fun_args = [];
                            fun_body = init_code; fun_fast = false;
@@ -2415,8 +2415,6 @@ let compile_for_metaocaml size = function
              Cglobal_symbol glob;
              Cdefine_symbol glob;
              Cskip(size * size_addr)] :: c3
-    end
-  | _ -> failwith "Unexpected input for compile_for_metaocaml"
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)

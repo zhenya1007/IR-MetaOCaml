@@ -135,6 +135,7 @@
 /asmrun/dynlink.c
 /asmrun/signals.c
 /asmrun/debugger.c
+/asmrun/run_code.c
 /asmrun/.depend.nt
 
 # /boot/

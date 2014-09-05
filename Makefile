@@ -874,4 +874,11 @@ distclean:
 .PHONY: otherlibrariesopt package-macosx promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
 
+# Make sure I don't by accident use OPAM to install the compiler "from the wrong branch"
+GIT_BRANCH=release-4.02.0+CSP
+check_git_branch:
+	test $$(git branch | grep '^\*' | tr -d '[[:space:]*]') = $(GIT_BRANCH)
+
+.PHONY: check_git_branch
+
 include .depend

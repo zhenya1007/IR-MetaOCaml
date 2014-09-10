@@ -380,8 +380,10 @@ tests: opt.opt
 	cd testsuite; $(MAKE) clean && $(MAKE) all
 
 # The clean target
-
 clean:: partialclean
+
+installocamlnat:
+	cp toploop/ocamlnat $(INSTALL_BINDIR)/ocamlnat$(EXE)
 
 # Shared parts of the system
 
@@ -867,6 +869,7 @@ distclean:
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot defaultentry depend distclean install installopt
+.PHONY: installoptopt installocamlnat
 .PHONY: library library-cross libraryopt
 .PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt

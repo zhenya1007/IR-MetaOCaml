@@ -66,7 +66,9 @@ module Options = Main_args.Make_opttop_options (struct
   let _I dir =
     let dir = Misc.expand_directory Config.standard_library dir in
     include_dirs := dir :: !include_dirs
+  let _dcse = set dump_cse
   let _init s = init_file := Some s
+  let _noinit = set noinit
   let _inline n = inline_threshold := n * 8
   let _labels = clear classic
   let _no_alias_deps = set transparent_modules
@@ -76,16 +78,19 @@ module Options = Main_args.Make_opttop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
+  let _open s = open_modules := s :: !open_modules
   let _ppx s = Compenv.first_ppx := s :: !Compenv.first_ppx
   let _principal = set principal
   let _real_paths = set real_paths
   let _rectypes = set recursive_types
+  let _safe_string = clear unsafe_string
   let _strict_sequence = set strict_sequence
   let _strict_formats = set strict_formats
   let _S = set keep_asm_file
   let _short_paths = clear real_paths
   let _stdin () = file_argument ""
   let _unsafe = set fast
+  let _unsafe_string = set unsafe_string
   let _version () = print_version ()
   let _vnum () = print_version_num ()
   let _w s = Warnings.parse_options false s

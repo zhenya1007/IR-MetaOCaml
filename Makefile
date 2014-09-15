@@ -885,3 +885,11 @@ check_git_branch:
 .PHONY: check_git_branch
 
 include .depend
+
+# Database for idutils (lid)
+ids: ID
+id: ID
+ID: Makefile
+	rm -f ID
+	find . \( -name '*.ml*' -or -name 'Makefile*' \) -print0 \
+		| mkid --files0-from=- --default-lang=text --include=text --lang-option=text:--include="'"

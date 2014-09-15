@@ -30,6 +30,7 @@
 /ocamlcompopt.sh
 /package-macosx
 /ocamlnat
+/ID
 
 # /asmcomp/
 /asmcomp/*.o

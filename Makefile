@@ -379,11 +379,11 @@ installoptopt:
 tests: opt.opt
 	cd testsuite; $(MAKE) clean && $(MAKE) all
 
+installocamlnat:
+	cp ocamlnat $(INSTALL_BINDIR)/ocamlnat$(EXE)
+
 # The clean target
 clean:: partialclean
-
-installocamlnat:
-	cp toploop/ocamlnat $(INSTALL_BINDIR)/ocamlnat$(EXE)
 
 # Shared parts of the system
 

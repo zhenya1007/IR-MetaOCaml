@@ -51,6 +51,7 @@ val path_code : Path.t
 val path_match_failure: Path.t
 val path_assert_failure : Path.t
 val path_undefined_recursive_module : Path.t
+val path_values_env_not_runnable : Path.t
 
 (* To build the initial environment. Since there is a nasty mutual
    recursion between predef and env, we break it by parameterizing

@@ -214,6 +214,8 @@ let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit
 
+
+
 (* Build sharing keys *)
 (*
    Those keys are later compared with Pervasives.compare.
@@ -448,6 +450,11 @@ let rec transl_normal_path = function
       Lprim(Pfield pos, [transl_normal_path p])
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
+      
+let lambda_values_env_body = Lprim(Praise Raise_regular, 
+                                    [Lprim(Pmakeblock(0, Immutable),
+                                      [transl_normal_path 
+                                        Predef.path_values_env_not_runnable])])
 
 (* Translation of value identifiers *)
 

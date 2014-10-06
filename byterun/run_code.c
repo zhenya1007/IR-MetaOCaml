@@ -15,15 +15,13 @@ CAMLprim value metaocaml_run_code(value block)
 {
   static value * run_code_function = NULL;
   CAMLparam1(block);
-  CAMLlocal3(closure, code, result);
+  CAMLlocal1(result);
   if (run_code_function == NULL) {
      /* First time around, look up by name */
      run_code_function = caml_named_value("Metaocaml.run_code");
   }
   if (run_code_function != NULL) {
-     code = Field(block, 0);
-     closure = Field(block, 1);
-     result = caml_callback2(*run_code_function, code, closure);
+     result = caml_callback(*run_code_function, block);
      CAMLreturn(result);
   }
   else
@@ -31,7 +29,7 @@ CAMLprim value metaocaml_run_code(value block)
 }
 
 /* copied from meta.c:caml_reify_bytecode(), and modified */
-CAMLprim value metaocaml_replace_code(value prog, value len, value clos)
+CAMLprim value metaocaml_prepare_bytecode(value prog, value len)
 {
 #ifdef ARCH_BIG_ENDIAN
   caml_fixup_endianness((code_t) prog, (asize_t) Long_val(len));
@@ -40,8 +38,7 @@ CAMLprim value metaocaml_replace_code(value prog, value len, value clos)
   caml_thread_code((code_t) prog, (asize_t) Long_val(len));
 #endif
   caml_prepare_bytecode((code_t) prog, (asize_t) Long_val(len));
-  Code_val(clos) = (code_t) prog;
-  return clos;
+  return Val_unit;
 }
 
 #else /* NATIVE_CODE */

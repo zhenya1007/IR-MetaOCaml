@@ -1,8 +1,7 @@
 open Format
 
 (* Copied from meta.ml (the declaration for reify_code), and modified *)
-type closure = unit -> Obj.t (* FIXME: I am pretty sure that, on this side of the Atlantic, they call such a thing "a thunk" *)
-external replace_code: bytes -> int -> closure -> closure = "metaocaml_replace_code"
+external prepare_bytecode: bytes -> int ->  unit = "metaocaml_prepare_bytecode"
 
 type evaluation_outcome = Result of Obj.t | Exception of exn
 
@@ -10,12 +9,14 @@ type evaluation_outcome = Result of Obj.t | Exception of exn
    The problem with the original is that it calls Bytegen.compile_phrase
    which compiles the lambda-form passed to it in an empty environment.
    However, compiling the form in an empty environment is at odds with
-   cross-stage persistance. *)
-let load_lambda ppf lam env clos =
+   cross-stage persistence. *)
+let load_lambda ppf lam comp_env val_env =
+  let set_code_pointer clos code = 
+    Obj.set_field clos 0 code in
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
-  let (init_code, fun_code) = Bytegen.compile_for_metaocaml slam env in
+  let (init_code, fun_code) = Bytegen.compile_for_metaocaml slam comp_env in
   if !Clflags.dump_instr then
     fprintf ppf "%a%a@."
     Printinstr.instrlist init_code
@@ -27,7 +28,11 @@ let load_lambda ppf lam env clos =
   Symtable.check_global_initialized reloc;
   Symtable.update_global_table();
   try
-    let retval = (replace_code code code_size clos) () in
+    let clos = Obj.dup val_env in
+    prepare_bytecode code code_size;
+    set_code_pointer clos (Obj.magic code);
+    let f : unit -> Obj.t = Obj.magic clos in
+    let retval = f () in
     if can_free then begin
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
@@ -41,10 +46,11 @@ let load_lambda ppf lam env clos =
     Symtable.restore_state initial_symtable;
     Exception x
 
-let run_code s clos =
-  let (env, lam) = (Marshal.from_string s 0 : Instruct.compilation_env * Lambda.lambda) in
+let run_code block =
+  let (s, val_env) = (Obj.magic (Obj.field block 0), Obj.field block 1) in
+  let (comp_env, lam) = (Marshal.from_string s 0 : Instruct.compilation_env * Lambda.lambda) in
   (* FIXME: always passing Format.std_formatter here is a kludge *)
-  match load_lambda Format.std_formatter lam env clos with
+  match load_lambda std_formatter lam comp_env val_env with
   | Result v -> v
   | Exception x -> raise x
 

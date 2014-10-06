@@ -225,6 +225,7 @@ val make_key: lambda -> lambda option
 
 val const_unit: structured_constant
 val lambda_unit: lambda
+val lambda_values_env_body: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 

@@ -82,7 +82,17 @@ promote:
 	  echo "Directory '$(DIR)' does not exist."; \
 	  exit 1; \
 	fi
-	@cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote
+	@if [ ! -f $(DIR)/Makefile ]; then \
+	  for dir in $(DIR)/*; do \
+	    if [ -d $$dir ]; then \
+	      $(MAKE) promote DIR=$$dir; \
+	    fi; \
+	  done; \
+	else \
+	  echo "Running tests from '$$DIR' ..."; \
+	  cd $(DIR) && \
+	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote || echo '=> unexpected error'; \
+	fi
 
 .PHONY: lib
 lib:

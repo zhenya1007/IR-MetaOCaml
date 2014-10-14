@@ -190,7 +190,7 @@ type lambda =
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
-  | Lcode of lambda
+  | Lcode of lambda * Ident.t list (* code * free variables *)
 
 and lambda_switch =
   { sw_numconsts: int;
@@ -276,7 +276,7 @@ let make_key e =
         Lassign (x,tr_rec env e)
     | Lsend (m,e1,e2,es,loc) ->
         Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Location.none)
-    | Lcode e -> Lcode (tr_rec env e)
+    | Lcode (e, fv) -> Lcode (tr_rec env e, fv)
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
     | Lletrec _|Lfunction _
     | Lfor _ | Lwhile _
@@ -368,7 +368,7 @@ let iter f = function
       f lam
   | Lifused (v, e) ->
       f e
-  | Lcode e ->
+  | Lcode (e, _) ->
     f e
 
 
@@ -505,7 +505,7 @@ let subst_lambda s lam =
       Lsend (k, subst met, subst obj, List.map subst args, loc)
   | Levent (lam, evt) -> Levent (subst lam, evt)
   | Lifused (v, e) -> Lifused (v, subst e)
-  | Lcode e -> Lcode (subst e)
+  | Lcode (e, fv) -> Lcode (subst e, fv)
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
   and subst_strcase (key, case) = (key, subst case)

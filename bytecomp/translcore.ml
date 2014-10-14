@@ -921,7 +921,7 @@ and transl_exp0 e =
         (* FIXME: kludge this for now *)
   | Texp_code e ->
     let c = transl_exp e in
-    Lcode c
+    Lcode (c, IdentSet.elements (free_variables c))
   | Texp_run e ->
     let c = transl_exp e in
     Lprim(Prun, [c])

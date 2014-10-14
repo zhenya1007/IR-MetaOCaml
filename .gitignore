@@ -1884,6 +1884,27 @@
 /testsuite/tests/match-exception-warnings/.depend.nt
 /testsuite/tests/match-exception-warnings/.DS_Store
 
+# /testsuite/tests/metaocaml/
+/testsuite/tests/metaocaml/**/*.o
+/testsuite/tests/metaocaml/**/*.a
+/testsuite/tests/metaocaml/**/*.so
+/testsuite/tests/metaocaml/**/*.obj
+/testsuite/tests/metaocaml/**/*.lib
+/testsuite/tests/metaocaml/**/*.dll
+/testsuite/tests/metaocaml/**/*.cm[ioxat]
+/testsuite/tests/metaocaml/**/*.cmx[as]
+/testsuite/tests/metaocaml/**/*.cmti
+/testsuite/tests/metaocaml/**/*.annot
+/testsuite/tests/metaocaml/**/*.result
+/testsuite/tests/metaocaml/**/*.byte
+/testsuite/tests/metaocaml/**/*.native
+/testsuite/tests/metaocaml/**/program
+/testsuite/tests/metaocaml/**/*.exe
+/testsuite/tests/metaocaml/**/*.exe.manifest
+/testsuite/tests/metaocaml/**/.depend
+/testsuite/tests/metaocaml/**/.depend.nt
+/testsuite/tests/metaocaml/**/.DS_Store
+
 # /testsuite/tests/misc/
 /testsuite/tests/misc/*.o
 /testsuite/tests/misc/*.a

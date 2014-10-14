@@ -381,7 +381,7 @@ let rec lam ppf = function
               lam expr
   | Lifused(id, expr) ->
       fprintf ppf "@[<2>(ifused@ %a@ %a)@]" Ident.print id lam expr
-  | Lcode expr ->
+  | Lcode (expr, _) ->
     fprintf ppf "@[<2>(code: @ %a)@]" lam expr
 
 and sequence ppf = function

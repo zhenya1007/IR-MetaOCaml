@@ -815,10 +815,9 @@ let rec comp_expr env exp sz cont =
       end
   | Lifused (_, exp) ->
       comp_expr env exp sz cont
-  | Lcode exp ->
+  | Lcode (exp, fv) ->
     let lbl = new_label() in
     let body = lambda_unit in
-    let fv = IdentSet.elements(free_variables exp) in
     let to_compile =
       { params = []; body = body; label = lbl;
         free_vars = []; num_defs = 1; rec_vars = []; rec_pos = 0 } in

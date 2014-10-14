@@ -201,7 +201,7 @@ type lambda =
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
-  | Lcode of lambda
+  | Lcode of lambda * Ident.t list (* code * free variables *)
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)

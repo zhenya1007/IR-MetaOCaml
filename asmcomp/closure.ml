@@ -1024,7 +1024,7 @@ let rec close fenv cenv = function
       (add_debug_info ev ulam, approx)
   | Lifused _ ->
       assert false
-  | Lcode body ->
+  | Lcode (body, _) ->
       let funct = Lfunction(Curried, [], body) in
       let (clos, _) = close_one_function fenv cenv (Ident.create "code") funct in
       (Ucode clos, Value_unknown)

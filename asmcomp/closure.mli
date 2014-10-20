@@ -14,3 +14,6 @@
 
 val intro: int -> Lambda.lambda -> Clambda.ulambda
 val reset : unit -> unit
+
+(* The "I am not really a runnable closure; I just hold a bunch of values" marker *)
+val ulambda_values_env_body : Clambda.ulambda

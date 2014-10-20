@@ -137,42 +137,6 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
   then raise(Error(Assembler_error asmfile));
   if !keep_asm_file then () else remove_file asmfile
 
-let compile_for_metaocaml ?toplevel prefixname ppf (size, ufunct) =
-  let asmfile =
-    if !keep_asm_file
-    then prefixname ^ ext_asm
-    else Filename.temp_file "camlasm" ext_asm in
-  let oc = open_out asmfile in
-  begin try
-    Emitaux.output_channel := oc;
-    Emit.begin_assembly();
-    Cmmgen.compunit_for_metaocaml size ufunct
-    ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
-    (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
-
-    (* We add explicit references to external primitive symbols.  This
-       is to ensure that the object files that define these symbols,
-       when part of a C library, won't be discarded by the linker.
-       This is important if a module that uses such a symbol is later
-       dynlinked. *)
-
-    compile_phrase ppf
-      (Cmmgen.reference_symbols
-         (List.filter (fun s -> s <> "" && s.[0] <> '%')
-            (List.map Primitive.native_name !Translmod.primitive_declarations))
-      );
-
-    Emit.end_assembly();
-    close_out oc
-  with x ->
-    close_out oc;
-    if !keep_asm_file then () else remove_file asmfile;
-    raise x
-  end;
-  if Proc.assemble_file asmfile (prefixname ^ ext_obj) <> 0
-  then raise(Error(Assembler_error asmfile));
-  if !keep_asm_file then () else remove_file asmfile
-
 (* Error report *)
 
 let report_error ppf = function

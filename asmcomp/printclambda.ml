@@ -157,7 +157,7 @@ let rec lam ppf = function
         else if k = Lambda.Cached then "cache"
         else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
-  | Ucode l -> fprintf ppf "@[<2>(code %a)@]" lam l
+  | Ucode (l,_,_, _) -> fprintf ppf "@[<2>(code %a)@]" Printlambda.lambda l
 
 and sequence ppf ulam = match ulam with
   | Usequence(l1, l2) ->

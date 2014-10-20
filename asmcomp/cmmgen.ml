@@ -1370,12 +1370,12 @@ let rec transl = function
       end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
-  | Ucode(Uclosure(([f] as fundecls), clos_vars)) ->
+  | Ucode(_, f, clos_vars, _) ->
     let s = Marshal.to_string f [] in
     let b =  Uconst_string s in
     (* unfolding transl_const *)
     let sc = Compilenv.new_structured_constant b false in
-    let sz = fundecls_size fundecls in
+    let sz = fundecls_size [f] in
     let block_size = sz + List.length clos_vars in
     let header = alloc_closure_header block_size in
     let heap_block =
@@ -1386,7 +1386,6 @@ let rec transl = function
     in
     if sz <> 3 then failwith "Unexpected size of heap block";
     Cop(Calloc, heap_block)
-  | Ucode _ -> failwith "unhandled Ucode case (is cmmgen.ml out of sync with closure.ml?)"
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->
@@ -2367,54 +2366,6 @@ let compunit size ulam =
          Cglobal_symbol glob;
          Cdefine_symbol glob] @ space) :: c3
 
-
-let compunit_for_metaocaml size uf  =
-  let body = match (List.length uf.params) with
-    (* if we had closed over some free vars, pass in the closure *)
-    | 2 -> Cop(Capply(typ_addr, Debuginfo.none),
-               [Cconst_symbol uf.label; Cconst_int 0; Cconst_symbol uf.label])
-    | 1 -> Cop(Capply(typ_addr, Debuginfo.none),
-               [Cconst_symbol uf.label; Cconst_int 0])
-    | _ -> failwith "unexpected number of arguments to <code> closure"
-  in
-  let glob = Compilenv.make_symbol None in
-  let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
-                       fun_args = [];
-                       fun_body = body;
-                       fun_fast = false;
-                       fun_dbg  = Debuginfo.none }] in
-  let () = Queue.add uf functions in
-  let c2 = transl_all_functions StringSet.empty c1 in
-  let c3 = emit_all_constants c2 in
-  Cdata [Cint(block_header 0 size);
-         Cglobal_symbol glob;
-         Cdefine_symbol glob;
-         Cskip(size * size_addr)] :: c3
-
-(* FIXME: It's unfortunate that I am cloning compunit: at first blush,
-   it seems that I should be able to make one of the existinc
-   constructs work: I have considered Ulet, and Useq, as well as
-   Ugeneric_apply.  However, none of them quite do what I really want:
-   in fact, all of them "do too much."  I want to _allocate_ the
-   closure which holds the values of the cross-stage persistent
-   variables when the <code> construct is compiled, and to _use_ it
-   when the !run construct is compiled -- but I don't see how to
-   achieve this using any of the existing constructs. *)
-
-let compile_for_metaocaml size = function
-  | {label; arity; params; body; dbg} ->
-      let glob = Compilenv.make_symbol None in
-      let init_code = transl (Udirect_apply (label, [], Debuginfo.none)) in
-      let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
-                           fun_args = [];
-                           fun_body = init_code; fun_fast = false;
-                           fun_dbg  = Debuginfo.none }] in
-      let c2 = transl_all_functions StringSet.empty c1 in
-      let c3 = emit_all_constants c2 in
-      Cdata [Cint(block_header 0 size);
-             Cglobal_symbol glob;
-             Cdefine_symbol glob;
-             Cskip(size * size_addr)] :: c3
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)

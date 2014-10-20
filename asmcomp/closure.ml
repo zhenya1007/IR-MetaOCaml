@@ -83,7 +83,7 @@ let occurs_var var u =
     | Uassign(id, u) -> id = var || occurs u
     | Usend(_, met, obj, args, _) ->
         occurs met || occurs obj || List.exists occurs args
-    | Ucode c -> false (* FIXME: a bit of a kludge for now *)
+    | Ucode _ -> false (* FIXME: a bit of a kludge for now *)
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do
@@ -228,7 +228,7 @@ let lambda_smaller lam threshold =
     | Usend(_, met, obj, args, _) ->
         size := !size + 8;
         lambda_size met; lambda_size obj; lambda_list_size args
-    | Ucode lam -> ()
+    | Ucode _ -> ()
   and lambda_list_size l = List.iter lambda_size l
   and lambda_array_size a = Array.iter lambda_size a in
   try
@@ -1026,8 +1026,15 @@ let rec close fenv cenv = function
       assert false
   | Lcode (body, _) ->
       let funct = Lfunction(Curried, [], body) in
-      let (clos, _) = close_one_function fenv cenv (Ident.create "code") funct in
-      (Ucode clos, Value_unknown)
+      let cenv_fv_ref = ref [] in
+      let (ufunct, args) = 
+        (function | (Uclosure([ufunct], args), _) -> (ufunct, args)
+                  | _ -> fatal_error "Closure.close(code)")  
+        (close_one_function ~cenv_fv_ref fenv cenv (Ident.create "code") funct) in
+      let cenv_fv = (function | [cenv] -> cenv 
+                              | _ -> fatal_error "Closure.close(cenv_fv)") 
+                    !cenv_fv_ref in
+      (Ucode (body, ufunct, args, cenv_fv), Value_unknown)
 
 and close_list fenv cenv = function
     [] -> []
@@ -1050,7 +1057,7 @@ and close_named fenv cenv id = function
 
 (* Build a shared closure for a set of mutually recursive functions *)
 
-and close_functions fenv cenv fun_defs =
+and close_functions ?cenv_fv_ref fenv cenv fun_defs =
   let fun_defs =
     List.flatten
       (List.map
@@ -1114,6 +1121,8 @@ and close_functions fenv cenv fun_defs =
     let env_param = Ident.create "env" in
     let cenv_fv =
       build_closure_env env_param (fv_pos - env_pos) fv in
+    let store_cenv_fv = function
+      None -> () | Some r -> r :=  cenv_fv::!r in
     let cenv_body =
       List.fold_right2
         (fun (id, params, body, fundesc) pos env ->
@@ -1142,7 +1151,7 @@ and close_functions fenv cenv fun_defs =
     if lambda_smaller ubody
         (!Clflags.inline_threshold + n)
     then fundesc.fun_inline <- Some(fun_params, ubody);
-
+    store_cenv_fv cenv_fv_ref;
     (f, (id, env_pos, Value_closure(fundesc, approx))) in
   (* Translate all function definitions. *)
   let clos_info_list =
@@ -1166,6 +1175,7 @@ and close_functions fenv cenv fun_defs =
       (* Excessive closure nesting: assume environment parameter is used *)
         List.map2 clos_fundef uncurried_defs clos_offsets
     in
+
   (* Update nesting depth *)
   decr function_nesting_depth;
   (* Return the Uclosure node and the list of all identifiers defined,
@@ -1176,8 +1186,8 @@ and close_functions fenv cenv fun_defs =
 
 (* Same, for one non-recursive function *)
 
-and close_one_function fenv cenv id funct =
-  match close_functions fenv cenv [id, funct] with
+and close_one_function ?cenv_fv_ref fenv cenv id funct =
+  match close_functions ?cenv_fv_ref fenv cenv [id, funct] with
   | (clos, (i, _, approx) :: _) when id = i -> (clos, approx)
   | _ -> fatal_error "Closure.close_one_function"
 
@@ -1284,13 +1294,14 @@ let collect_exported_structured_constants a =
     | Ufor (_, u1, u2, _, u3) -> ulam u1; ulam u2; ulam u3
     | Uassign (_, u) -> ulam u
     | Usend (_, u1, u2, ul, _) -> ulam u1; ulam u2; List.iter ulam ul
-    | Ucode u -> ulam u
+    | Ucode _ -> ()
   in
   approx a
 
 let reset () =
   global_approx := [||];
   function_nesting_depth := 0
+
 
 (* The entry point *)
 
@@ -1305,3 +1316,6 @@ let intro size lam =
   else collect_exported_structured_constants (Value_tuple !global_approx);
   global_approx := [||];
   ulam
+
+(* The "I am not really a runnable closure; I just hold a bunch of values" marker *)
+let ulambda_values_env_body = intro 0 Lambda.lambda_values_env_body

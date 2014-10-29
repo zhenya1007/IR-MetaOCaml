@@ -42,6 +42,19 @@ let rec build_closure_env env_param pos = function
       Tbl.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none))
               (build_closure_env env_param (pos+1) rem)
 
+let offsets_of_closure_env cenv =
+  Tbl.fold (fun id v (p,t) -> match v with
+              | Uprim(Pfield pos, [Uvar env_param], _) ->
+                  let t' = Tbl.add id pos t in
+                  let p' = match p with
+                  | Some e ->
+                    if Ident.equal env_param e then p
+                    else fatal_error "Closure.closure_env_to_offsets(env_param changed)"
+                  | None -> Some env_param in
+                  (p',t')
+              | _ -> fatal_error "Closure.closure_env_to_offsets(unexpected entry format)")
+           cenv (None,Tbl.empty)
+
 (* Auxiliary for accessing globals.  We change the name of the global
    to the name of the corresponding asm symbol.  This is done here
    and no longer in Cmmgen so that approximations stored in .cmx files
@@ -84,6 +97,7 @@ let occurs_var var u =
     | Usend(_, met, obj, args, _) ->
         occurs met || occurs obj || List.exists occurs args
     | Ucode _ -> false (* FIXME: a bit of a kludge for now *)
+    | Urun _ -> false
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do
@@ -228,7 +242,7 @@ let lambda_smaller lam threshold =
     | Usend(_, met, obj, args, _) ->
         size := !size + 8;
         lambda_size met; lambda_size obj; lambda_list_size args
-    | Ucode _ -> ()
+    | Ucode _ | Urun _ -> raise Exit (* Copied from [Uclosure] case *)
   and lambda_list_size l = List.iter lambda_size l
   and lambda_array_size a = Array.iter lambda_size a in
   try
@@ -623,6 +637,7 @@ let rec substitute fpc sb ulam =
       Usend(k, substitute fpc sb u1, substitute fpc sb u2,
             List.map (substitute fpc sb) ul, dbg)
   | Ucode _ as c -> c
+  | Urun _ as r -> r
 
 (* Perform an inline expansion *)
 
@@ -1025,16 +1040,29 @@ let rec close fenv cenv = function
   | Lifused _ ->
       assert false
   | Lcode (body, _) ->
-      let funct = Lfunction(Curried, [], body) in
+      let funct = Lfunction(Curried, [Ident.create "param"], body) in
       let cenv_fv_ref = ref [] in
-      let (ufunct, args) = 
+      let (ufunct, args) =
         (function | (Uclosure([ufunct], args), _) -> (ufunct, args)
-                  | _ -> fatal_error "Closure.close(code)")  
+                  | _ -> fatal_error "Closure.close(Lcode)")
         (close_one_function ~cenv_fv_ref fenv cenv (Ident.create "code") funct) in
-      let cenv_fv = (function | [cenv] -> cenv 
-                              | _ -> fatal_error "Closure.close(cenv_fv)") 
+      let cenv_fv = (function | [cenv] -> cenv
+                              | _ -> fatal_error "Closure.close(cenv_fv)")
                     !cenv_fv_ref in
-      (Ucode (body, ufunct, args, cenv_fv), Value_unknown)
+      (Ucode (body, ufunct, args, offsets_of_closure_env cenv_fv), Value_unknown)
+  | Lrun {uc_code; uc_offsets=(epo, offsets); uc_needs_env; uc_block} ->
+    let cenv' = match epo with
+      | Some env_param ->
+        Tbl.fold (fun id pos cenv ->
+                Tbl.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none)) cenv)
+             offsets cenv
+      | None -> cenv in
+    let funct = Lfunction(Curried, [Ident.create "param"], uc_code) in
+    let (clos, _) = close fenv cenv' funct in
+    let f = (function | Uclosure([f], _) -> f
+                      | _ -> fatal_error "Closure.close(Lrun)")
+            clos in
+    (Urun (f, uc_needs_env, uc_block), Value_unknown)
 
 and close_list fenv cenv = function
     [] -> []
@@ -1294,7 +1322,7 @@ let collect_exported_structured_constants a =
     | Ufor (_, u1, u2, _, u3) -> ulam u1; ulam u2; ulam u3
     | Uassign (_, u) -> ulam u
     | Usend (_, u1, u2, ul, _) -> ulam u1; ulam u2; List.iter ulam ul
-    | Ucode _ -> ()
+    | Ucode _ | Urun _ -> ()
   in
   approx a
 

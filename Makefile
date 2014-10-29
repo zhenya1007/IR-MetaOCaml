@@ -428,7 +428,7 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
        compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART) $(METAOCAML) expunge
 	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml \
 	  compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-	  compilerlibs/ocamltoplevel.cma $(METAOCAML) byterun/run_code.o $(TOPLEVELSTART) 
+	  compilerlibs/ocamltoplevel.cma $(METAOCAML) byterun/run_code.o $(TOPLEVELSTART)
 #	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
 #	rm -f ocaml.tmp
 
@@ -437,7 +437,7 @@ partialclean::
 
 # The native toplevel
 
-ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx) 
+ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -I asmrun otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
 			asmrun/run_code.o \
 		           $(NATTOPOBJS:.cmo=.cmx) -linkall
@@ -878,9 +878,9 @@ distclean:
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
 
 # Make sure I don't by accident use OPAM to install the compiler "from the wrong branch"
-GIT_BRANCH=release-4.02.0+CSP
+GIT_BRANCH=native-csp
 check_git_branch:
-	test $$(git branch | grep '^\*' | tr -d '[[:space:]*]') = $(GIT_BRANCH)
+	test "$$(git branch | grep '^\*' | tr -d '[[:space:]*]')" = "$(GIT_BRANCH)"
 
 .PHONY: check_git_branch
 

@@ -104,5 +104,3 @@ val toplevel_startup_hook : (unit -> unit) ref
 (* expose these so they can be called from metaocaml.ml *)
 type evaluation_outcome = Result of Obj.t | Exception of exn
 val load_lambda : formatter -> int*Lambda.lambda -> evaluation_outcome
-val need_symbol : string -> bool
-val dll_run : string -> string -> evaluation_outcome

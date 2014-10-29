@@ -1370,22 +1370,52 @@ let rec transl = function
       end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
-  | Ucode(_, f, clos_vars, _) ->
-    let s = Marshal.to_string f [] in
+  | Ucode(lam, f, clos_vars, offsets) ->
+    let uc = {Lambda.uc_code=lam;
+                     uc_offsets=offsets;
+                     uc_needs_env = List.length f.Clambda.params = 2;
+                     uc_block=Obj.repr []} in
+    let s = Marshal.to_string uc [] in
     let b =  Uconst_string s in
-    (* unfolding transl_const *)
-    let sc = Compilenv.new_structured_constant b false in
+    (* unfolding transl_structured_constant *)
+    let lbl = Compilenv.new_structured_constant b ~shared:false in
+    (* essentially copied from the Uclosure case, and modified *)
     let sz = fundecls_size [f] in
-    let block_size = sz + List.length clos_vars in
+    let block_size = sz + List.length clos_vars + 1 in
     let header = alloc_closure_header block_size in
     let heap_block =
       header ::
-      Cconst_symbol f.label ::
-      Cconst_symbol sc ::
-      (List.map transl clos_vars)
+      Cconst_symbol f.label
+      :: int_const 1
+      :: (List.map transl clos_vars) @ [Cconst_symbol lbl]
     in
-    if sz <> 3 then failwith "Unexpected size of heap block";
+    Queue.add f functions;
+    if sz <> 2 then fatal_error "Unexpected size of heap block";
+    begin match offsets with
+    | (Some e, _) ->
+      begin match f.Clambda.params with
+      | [_; e'] -> if not (Ident.equal e e')
+                 then fatal_error "Cmmgen.transl(Ucode): env_param mismatch"
+      | [_] -> assert (not uc.uc_needs_env)
+      | _ -> fatal_error "Cmmgen.transl(Ucode): invalid parameters list"
+      end
+    | (None, _) ->
+      begin match f.Clambda.params with
+      | [_] -> ()
+      | _ -> fatal_error ("Cmmgen.transl(Ucode): env_param in function_description"
+                              ^ " but not in offsets")
+      end
+    end;
     Cop(Calloc, heap_block)
+  | Urun(uf, env_used, block) ->
+      let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
+      if env_used then
+        let clos = Uclosure([uf], []) in
+        bind "run" (transl clos) (fun clos ->
+          Cop(Capply(typ_addr, Debuginfo.none),
+              [get_field clos 0; Cconst_int 0; Cconst_pointer (val_of_int (Obj.obj block))]))
+      else
+        Cop(Capply(typ_addr, Debuginfo.none), Cconst_pointer (val_of_int (Obj.obj (Obj.field block 0))) :: [Cconst_int 0])
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->

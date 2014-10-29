@@ -190,7 +190,8 @@ type lambda =
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
-  | Lcode of lambda * Ident.t list (* code * free variables *)
+  | Lcode of lambda * Ident.t list (* code * free variables: "open code term" *)
+  | Lrun of code_description (* "closed code term" *)
 
 and lambda_switch =
   { sw_numconsts: int;
@@ -210,10 +211,25 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
 
+and code_description = { (* Information for [run] *)
+  uc_code: lambda;
+  uc_offsets: Ident.t option * (Ident.t, int) Tbl.t;
+  (* The lexical environment in which to compile [uc_code]:
+     maps ids to offsets in the already-allocated closure *)
+  uc_needs_env : bool;
+  (* Since  closure conversion does constant propagation, it is possible to get a function
+     whose body does not actually reference the environment as a result of the closure conversion.
+     e.g., let x = 4 in .<x>. is closure-converted to fun () -> 4
+     This flag keeps track of whether the function actually uses its environment *)
+  uc_block : Obj.t;
+  (* The pointer to the allocated closure that holds the values
+     of the free variables *)
+}
+
+
 let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit
-
 
 
 (* Build sharing keys *)
@@ -276,7 +292,8 @@ let make_key e =
         Lassign (x,tr_rec env e)
     | Lsend (m,e1,e2,es,loc) ->
         Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Location.none)
-    | Lcode (e, fv) -> Lcode (tr_rec env e, fv)
+    | Lcode _ as c -> c
+    | Lrun _ as uc -> uc
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
     | Lletrec _|Lfunction _
     | Lfor _ | Lwhile _
@@ -368,8 +385,8 @@ let iter f = function
       f lam
   | Lifused (v, e) ->
       f e
-  | Lcode (e, _) ->
-    f e
+  | Lcode _ -> ()
+  | Lrun _ -> ()
 
 
 module IdentSet =
@@ -401,7 +418,7 @@ let free_ids get l =
     | Lvar _ | Lconst _ | Lapply _
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
     | Lifthenelse _ | Lsequence _ | Lwhile _
-    | Lsend _ | Levent _ | Lifused _ | Lcode _ -> ()
+    | Lsend _ | Levent _ | Lifused _ | Lcode _ | Lrun _ -> ()
   in free l; !fv
 
 let free_variables l =
@@ -450,10 +467,10 @@ let rec transl_normal_path = function
       Lprim(Pfield pos, [transl_normal_path p])
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
-      
-let lambda_values_env_body = Lprim(Praise Raise_regular, 
+
+let lambda_values_env_body = Lprim(Praise Raise_regular,
                                     [Lprim(Pmakeblock(0, Immutable),
-                                      [transl_normal_path 
+                                      [transl_normal_path
                                         Predef.path_values_env_not_runnable])])
 
 (* Translation of value identifiers *)
@@ -505,7 +522,8 @@ let subst_lambda s lam =
       Lsend (k, subst met, subst obj, List.map subst args, loc)
   | Levent (lam, evt) -> Levent (subst lam, evt)
   | Lifused (v, e) -> Lifused (v, subst e)
-  | Lcode (e, fv) -> Lcode (subst e, fv)
+  | Lcode _ as c -> c
+  | Lrun _ as uc -> uc
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
   and subst_strcase (key, case) = (key, subst case)

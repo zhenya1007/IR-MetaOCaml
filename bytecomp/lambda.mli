@@ -201,7 +201,8 @@ type lambda =
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
-  | Lcode of lambda * Ident.t list (* code * free variables *)
+  | Lcode of lambda * Ident.t list (* code X free variables: "open code term" *)
+  | Lrun of code_description (* "closed code term" *)
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
@@ -219,6 +220,22 @@ and lambda_event_kind =
     Lev_before
   | Lev_after of Types.type_expr
   | Lev_function
+
+and code_description = { (* Information for [run] *)
+  uc_code: lambda;
+  uc_offsets: Ident.t option * (Ident.t, int) Tbl.t;
+  (* The lexical environment in which to compile [uc_code]:
+     maps ids to offsets in the already-allocated closure *)
+  uc_needs_env : bool;
+  (* Since  closure conversion does constant propagation, it is possible to get a function
+     whose body does not actually reference the environment as a result of the closure conversion.
+     e.g., let x = 4 in .<x>. is closure-converted to fun () -> 4
+     This flag keeps track of whether the function actually uses its environment *)
+  uc_block : Obj.t;
+  (* The pointer to the allocated closure that holds the values
+     of the free variables *)
+}
+
 
 (* Sharing key *)
 val make_key: lambda -> lambda option

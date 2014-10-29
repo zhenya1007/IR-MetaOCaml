@@ -1,1 +1,1 @@
-val run_code : string -> Obj.t
+val run_code : Obj.t -> Obj.t

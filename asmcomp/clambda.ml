@@ -53,7 +53,9 @@ type ulambda =
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
   | Uassign of Ident.t * ulambda
   | Usend of meth_kind * ulambda * ulambda * ulambda list * Debuginfo.t
-  | Ucode of lambda * ufunction * ulambda list * (Ident.t, ulambda) Tbl.t
+  | Ucode of lambda * ufunction * ulambda list
+             * (Ident.t option * (Ident.t, int) Tbl.t)
+  | Urun of ufunction * bool * Obj.t
 
 and ufunction = {
   label  : function_label;
@@ -87,17 +89,7 @@ type value_approximation =
   | Value_unknown
   | Value_const of uconstant
   | Value_global_field of string * int
-  
-(* Information for [run] *)
 
-type ('a, 'b) code_description = {
-  uc_code  : lambda;
-  uc_cenv  : (Ident.t, ulambda) Tbl.t;
-  uc_cunit : 'a;  (* The compilation unit into which the values 
-                     associated with the free variables in [uc_code]
-                     got allocated *)
-  uc_label : 'b   (* The label on the closure block for the values *)
-}  
 
 (* Comparison functions for constants.  We must not use Pervasives.compare
    because it compares "0.0" and "-0.0" equal.  (PR#6442) *)
@@ -152,7 +144,7 @@ let compare_structured_constants c1 c2 =
   | Uconst_int32 x1, Uconst_int32 x2 -> Int32.compare x1 x2
   | Uconst_int64 x1, Uconst_int64 x2 -> Int64.compare x1 x2
   | Uconst_nativeint x1, Uconst_nativeint x2 -> Nativeint.compare x1 x2
-  | Uconst_block(t1, l1), Uconst_block(t2, l2) -> 
+  | Uconst_block(t1, l1), Uconst_block(t2, l2) ->
       let c = t1 - t2 (* no overflow possible here *) in
       if c <> 0 then c else compare_constant_lists l1 l2
   | Uconst_float_array l1, Uconst_float_array l2 ->

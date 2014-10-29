@@ -51,16 +51,11 @@ let rec lam ppf = function
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(apply@ %a%a)@]" lam lfun lams largs
   | Uclosure(clos, fv) ->
-      let idents ppf =
-        List.iter (fprintf ppf "@ %a" Ident.print)in
-      let one_fun ppf f =
-        fprintf ppf "@[<2>(fun@ %s@ %d @[<2>%a@]@ @[<2>%a@]@])"
-          f.label f.arity idents f.params lam f.body in
       let funs ppf =
         List.iter (fprintf ppf "@ %a" one_fun) in
       let lams ppf =
         List.iter (fprintf ppf "@ %a" lam) in
-      fprintf ppf "@[<2>(closure@ %a %a)@]" funs clos lams fv
+      fprintf ppf "@[<2>(closure@ %a@ fv: %a)@]" funs clos lams fv
   | Uoffset(l,i) -> fprintf ppf "@[<2>(offset %a %d)@]" lam l i
   | Ulet(id, arg, body) ->
       let rec letbody ul = match ul with
@@ -157,12 +152,23 @@ let rec lam ppf = function
         else if k = Lambda.Cached then "cache"
         else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
-  | Ucode (l,_,_, _) -> fprintf ppf "@[<2>(code %a)@]" Printlambda.lambda l
+  | Ucode (l,f,_, _) ->
+    fprintf ppf "@[<2>(code %a; fun: %a)@]" Printlambda.lambda l one_fun f
+  | Urun (uf, used, clos_vars) ->
+    let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
+    fprintf ppf "@[<2>(run@ %a@ (vars at: %#x%s))@]" one_fun uf (val_of_int (Obj.obj clos_vars)) (if used then "" else "(unused)")
 
 and sequence ppf ulam = match ulam with
   | Usequence(l1, l2) ->
       fprintf ppf "%a@ %a" sequence l1 sequence l2
   | _ -> lam ppf ulam
+
+and idents ppf =
+  List.iter (fprintf ppf "@ %a" Ident.print)
+
+and one_fun ppf f =
+  fprintf ppf "@[<2>(fun@ %s@ %d @[<2>%a@]@ @[<2>%a@]@])"
+    f.label f.arity idents f.params lam f.body
 
 let clambda ppf ulam =
   fprintf ppf "%a@." lam ulam

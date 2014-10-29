@@ -53,7 +53,9 @@ type ulambda =
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
   | Uassign of Ident.t * ulambda
   | Usend of meth_kind * ulambda * ulambda * ulambda list * Debuginfo.t
-  | Ucode of lambda * ufunction * ulambda list * (Ident.t, ulambda) Tbl.t
+  | Ucode of lambda * ufunction * ulambda list
+             * (Ident.t option * (Ident.t, int) Tbl.t)
+  | Urun of ufunction * bool * Obj.t
 
 and ufunction = {
   label  : function_label;
@@ -87,18 +89,6 @@ type value_approximation =
   | Value_unknown
   | Value_const of uconstant
   | Value_global_field of string * int
-  
-
-(* Information for [run] *)
-
-type ('a, 'b) code_description = {
-  uc_code  : lambda;
-  uc_cenv  : (Ident.t, ulambda) Tbl.t;
-  uc_cunit : 'a;  (* The compilation unit into which the values 
-                     associated with the free variables in [uc_code]
-                     got allocated *)
-  uc_label : 'b   (* The label on the closure block for the values *)
-}
 
 
 (* Comparison functions for constants *)

@@ -969,7 +969,7 @@ let rec close fenv cenv = function
               us_index_blocks = block_index;
               us_actions_blocks = block_actions})  in
         (fconst (fblock ulam),Value_unknown) in
-(* NB: failaction might get copied, thus it should be some Lstaticraise *)
+      (* NB: failaction might get copied, thus it should be some Lstaticraise *)
       let fail = sw.sw_failaction in
       begin match fail with
       | None|Some (Lstaticraise (_,_)) -> fn fail

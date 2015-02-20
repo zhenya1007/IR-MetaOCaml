@@ -322,6 +322,7 @@ and expression_desc =
         (* [%id] *)
   | Pexp_code of expression (* it may be better to have "expression list" here *)
   | Pexp_run of expression
+  | Pexp_escape of expression
 
 and case =   (* (P -> E) or (P when E0 -> E) *)
     {

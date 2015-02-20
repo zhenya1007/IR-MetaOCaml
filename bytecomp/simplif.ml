@@ -86,6 +86,7 @@ let rec eliminate_ref id = function
       Lifused(v, eliminate_ref id e)
   | Lcode _ as c -> c
   | Lrun _ as uc -> uc
+  | Lescape _ as e -> e
 
 (* Simplification of exits *)
 
@@ -159,6 +160,7 @@ let simplify_exits lam =
   | Lifused(v, l) -> count l
   | Lcode _ -> ()
   | Lrun _ -> ()
+  | Lescape _ -> ()
 
 
   and count_default sw = match sw.sw_failaction with
@@ -280,6 +282,7 @@ let simplify_exits lam =
   | Lifused(v, l) -> Lifused (v,simplif l)
   | Lcode _ as c -> c
   | Lrun _ as uc -> uc
+  | Lescape _ as e -> e
   in
   simplif lam
 
@@ -401,6 +404,7 @@ let simplify_lets lam =
       if count_var v > 0 then count bv l
   | Lcode (l, _) -> count bv l
   | Lrun {uc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
+  | Lescape l -> count bv l
 
   and count_default bv sw = match sw.sw_failaction with
   | None -> ()
@@ -509,6 +513,7 @@ let simplify_lets lam =
       if count_var v > 0 then simplif l else lambda_unit
   | Lcode _ as c -> c
   | Lrun _ as uc -> uc
+  | Lescape _ as e -> e
   in
   simplif lam
 
@@ -592,6 +597,7 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos is_tail lam
   | Lcode _ -> ()
   | Lrun _ -> ()
+  | Lescape _ -> ()
 and list_emit_tail_infos_fun f is_tail =
   List.iter (fun x -> emit_tail_infos is_tail (f x))
 and list_emit_tail_infos is_tail =

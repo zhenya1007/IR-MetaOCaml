@@ -365,6 +365,9 @@ and expression i ppf x =
   | Pexp_run e ->
       line i ppf "Pexp_run";
       expression i ppf e
+  | Pexp_escape e ->
+      line i ppf "Pexp_escape";
+      expression i ppf e
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc

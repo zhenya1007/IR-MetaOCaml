@@ -117,6 +117,7 @@ module Exp = struct
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pexp_extension a)
   let code ?loc ?attrs a = mk ?loc ?attrs (Pexp_code a)
   let run ?loc ?attrs a = mk ?loc ?attrs (Pexp_run a)
+  let escape ?loc ?attrs a = mk ?loc ?attrs (Pexp_escape a)
 
   let case lhs ?guard rhs =
     {

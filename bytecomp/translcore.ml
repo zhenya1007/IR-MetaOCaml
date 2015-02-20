@@ -918,13 +918,15 @@ and transl_exp0 e =
           cl_env = e.exp_env;
           cl_attributes = [];
          }
-        (* FIXME: kludge this for now *)
   | Texp_code e ->
     let c = transl_exp e in
     Lcode (c, IdentSet.elements (free_variables c))
   | Texp_run e ->
     let c = transl_exp e in
     Lprim(Prun, [c])
+  | Texp_escape e ->
+      let c = transl_exp e in
+      Lescape c
 
 and transl_list expr_list =
   List.map transl_exp expr_list

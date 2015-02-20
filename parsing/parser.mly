@@ -321,6 +321,8 @@ let mkctf_attrs d attrs =
 %token END
 %token EOF
 %token EQUAL
+/* splice in a piece of code */
+%token ESCAPE
 %token EXCEPTION
 %token EXTERNAL
 %token FALSE
@@ -443,7 +445,7 @@ conflicts.
 The precedences must be listed from low to high.
 */
 
-%right RUN
+%right RUN ESCAPE
 %nonassoc IN
 %nonassoc below_SEMI
 %nonassoc SEMI                          /* below EQUAL ({lbl=...; lbl=...}) */
@@ -1202,6 +1204,8 @@ expr:
       { unclosed ".<" 1 ">." 4 }
   | RUN expr
       { mkexp (Pexp_run ($2)) }
+  | ESCAPE expr
+      { mkexp (Pexp_escape ($2)) }
 ;
 simple_expr:
     val_longident

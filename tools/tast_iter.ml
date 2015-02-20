@@ -169,6 +169,7 @@ let expression sub exp =
       sub # module_expr mexpr
   | Texp_code exp -> sub # expression exp
   | Texp_run exp -> sub # expression exp
+  | Texp_escape exp -> sub # expression exp
 
 
 let package_type sub pack =

@@ -352,6 +352,7 @@ and untype_expression exp =
         Pexp_pack (untype_module_expr mexpr)
     | Texp_code exp -> Pexp_code (untype_expression exp)
     | Texp_run exp -> Pexp_run (untype_expression exp)
+    | Texp_escape exp -> Pexp_escape (untype_expression exp)
   in
   List.fold_right untype_extra exp.exp_extra
     (Exp.mk ~loc:exp.exp_loc ~attrs:exp.exp_attributes desc)
@@ -626,7 +627,7 @@ and untype_class_field cf =
         in
         let exp = remove_fun_self exp in
         Pcf_method (lab, priv, Cfk_concrete (o, untype_expression exp))
-    | Tcf_initializer exp -> 
+    | Tcf_initializer exp ->
         let remove_fun_self = function
           | { exp_desc = Texp_function("", [case], _) } when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
           | e -> e

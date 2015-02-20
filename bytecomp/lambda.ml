@@ -191,6 +191,7 @@ type lambda =
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
   | Lcode of lambda * Ident.t list (* code * free variables: "open code term" *)
+  | Lescape of lambda
   | Lrun of code_description (* "closed code term" *)
 
 and lambda_switch =
@@ -221,6 +222,23 @@ and code_description = { (* Information for [run] *)
      whose body does not actually reference the environment as a result of the closure conversion.
      e.g., let x = 4 in .<x>. is closure-converted to fun () -> 4
      This flag keeps track of whether the function actually uses its environment *)
+  (* FIXME : a better solution would probably be to preserve the
+     [fenv] argument from [Closure.close] call.
+     The difficulty there is that [fenv] maps from [Id.t]s to
+     [Ulambda] terms, and [Ulambda] isn't (yet) known when
+     the [Lambda] module (this module) is compiled.  Hence,
+     I would either need to
+     a) move clambda.ml to this directory,
+        and then set up aliases in asmcomp/clambda.ml (should be fairly
+        quick, but not particularly elegant conceptually)
+     b) set up a pair of "lowering"/"lifting" functions to go back and
+        forth between [Ulambda] and (some extension of) [Lambda]
+        (conceptually cleaner, but more work)
+     c) take inspiration from how [build_initial_env] is defined
+        in typing/predef.mli, and parametarize over the types whose
+        "lowering"/"lifting" isn't trivial (seems like that would
+        work, but I am not certain) *)
+
   uc_block : Obj.t;
   (* The pointer to the allocated closure that holds the values
      of the free variables *)
@@ -292,9 +310,8 @@ let make_key e =
         Lassign (x,tr_rec env e)
     | Lsend (m,e1,e2,es,loc) ->
         Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Location.none)
-    | Lcode _ as c -> c
-    | Lrun _ as uc -> uc
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
+    | Lcode _ | Lrun _ | Lescape _
     | Lletrec _|Lfunction _
     | Lfor _ | Lwhile _
 (* Beware: (PR#6412) the event argument to Levent
@@ -387,6 +404,7 @@ let iter f = function
       f e
   | Lcode _ -> ()
   | Lrun _ -> ()
+  | Lescape _ -> ()
 
 
 module IdentSet =
@@ -418,7 +436,7 @@ let free_ids get l =
     | Lvar _ | Lconst _ | Lapply _
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
     | Lifthenelse _ | Lsequence _ | Lwhile _
-    | Lsend _ | Levent _ | Lifused _ | Lcode _ | Lrun _ -> ()
+    | Lsend _ | Levent _ | Lifused _ | Lcode _ | Lrun _ | Lescape _ -> ()
   in free l; !fv
 
 let free_variables l =
@@ -524,6 +542,7 @@ let subst_lambda s lam =
   | Lifused (v, e) -> Lifused (v, subst e)
   | Lcode _ as c -> c
   | Lrun _ as uc -> uc
+  | Lescape _ as e -> e
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
   and subst_strcase (key, case) = (key, subst case)

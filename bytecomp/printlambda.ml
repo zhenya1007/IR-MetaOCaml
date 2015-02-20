@@ -384,7 +384,9 @@ let rec lam ppf = function
   | Lcode (expr, _) ->
     fprintf ppf "@[<2>(code:@ %a)@]" lam expr
   | Lrun {uc_code=expr; _} ->
-    fprintf ppf "@[<2>(ucode:@ %a)@]" lam expr
+      fprintf ppf "@[<2>(ucode:@ %a)@]" lam expr
+  | Lescape expr ->
+      fprintf ppf "@[<2>(escape:@ %a)@]"lam expr
 
 and sequence ppf = function
   | Lsequence(l1, l2) ->

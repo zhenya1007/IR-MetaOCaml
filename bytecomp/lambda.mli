@@ -202,6 +202,7 @@ type lambda =
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
   | Lcode of lambda * Ident.t list (* code X free variables: "open code term" *)
+  | Lescape of lambda (* the escape before it is pre-processed *)
   | Lrun of code_description (* "closed code term" *)
 
 and lambda_switch =
@@ -226,7 +227,9 @@ and code_description = { (* Information for [run] *)
   uc_offsets: Ident.t option * (Ident.t, int) Tbl.t;
   (* The lexical environment in which to compile [uc_code]:
      maps ids to offsets in the already-allocated closure *)
-  uc_needs_env : bool;
+  uc_needs_env : bool; (* FIXME: this is probably a kludge,
+                          and a better way is probably to preserve the [fenv] argument
+                          from the call to [Closure.close] *)
   (* Since  closure conversion does constant propagation, it is possible to get a function
      whose body does not actually reference the environment as a result of the closure conversion.
      e.g., let x = 4 in .<x>. is closure-converted to fun () -> 4

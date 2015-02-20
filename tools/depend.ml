@@ -197,6 +197,7 @@ let rec add_expr bv exp =
   | Pexp_extension _ -> ()
   | Pexp_code (e) -> add_expr bv e (* FIXME: Placate the compiler for now *)
   | Pexp_run (e) -> add_expr bv e (* FIXME: Placate the compiler for now *)
+  | Pexp_escape e -> add_expr bv e (* FIXME: Placate the compiler for now *)
 
 and add_cases bv cases =
   List.iter (add_case bv) cases

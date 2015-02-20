@@ -464,6 +464,7 @@ rule token = parse
   | ".<" { LMETA }
   | ">." { RMETA }
   | ".!" { RUN }
+  | ".~" {ESCAPE}
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
   | "+." { PLUSDOT }

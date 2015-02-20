@@ -161,6 +161,7 @@ let iter_expression f e =
     | Pexp_pack me -> module_expr me
     | Pexp_code e -> expr e
     | Pexp_run e -> expr e
+    | Pexp_escape e -> expr e
 
   and case {pc_lhs = _; pc_guard; pc_rhs} =
     may expr pc_guard;
@@ -2691,17 +2692,30 @@ and type_expect_ ?in_function env sexp ty_expected =
     }
   | Pexp_run e ->
     let arg = type_exp env e in
-    match arg.exp_type with
+    let ty = match arg.exp_type with
     | { desc = Tconstr(p, [ty], _); level = _; id = _ }
-        when Path.same Predef.path_code p ->
-      rue {
-        exp_desc = Texp_run arg;
-        exp_loc = loc; exp_extra = [];
-        exp_type = ty;
-         exp_attributes = sexp.pexp_attributes;
-       exp_env = env;
-      }
-    | _ -> fatal_error "Wrong type of argument to Run."
+        when Path.same Predef.path_code p -> ty
+    | _ -> fatal_error "Wrong type of argument to Run." in
+    rue {
+    exp_desc = Texp_run arg;
+    exp_loc = loc; exp_extra = [];
+    exp_type = ty;
+    exp_attributes = sexp.pexp_attributes;
+    exp_env = env;
+    }
+  | Pexp_escape e ->
+    let arg = type_exp env e in
+    let ty = match arg.exp_type with
+    | { desc = Tconstr(p, [ty], _); level = _; id = _ }
+        when Path.same Predef.path_code p -> ty
+    | _ -> fatal_error "Wrong type of argument to Run." in
+    rue {
+    exp_desc = Texp_escape arg;
+    exp_loc = loc; exp_extra = [];
+    exp_type = ty;
+    exp_attributes = sexp.pexp_attributes;
+    exp_env = env;
+    }
 
 and type_function ?in_function loc attrs env ty_expected l caselist =
   let (loc_fun, ty_fun) =

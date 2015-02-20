@@ -296,6 +296,7 @@ and rw_exp iflag sexp =
   | Pexp_extension _ -> ()
   | Pexp_code (expr) -> rewrite_exp iflag expr (* FIXME: placate the compiler *)
   | Pexp_run (expr) -> rewrite_exp iflag expr (* FIXME: placate the compiler *)
+  | Pexp_escape (expr) -> rewrite_exp iflag expr (* FIXME: placate the compiler *)
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then

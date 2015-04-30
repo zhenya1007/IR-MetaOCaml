@@ -1039,7 +1039,7 @@ let rec close fenv cenv = function
       (add_debug_info ev ulam, approx)
   | Lifused _ ->
       assert false
-  | Lcode (body, _) ->
+  | Lcode body ->
       let funct = Lfunction(Curried, [Ident.create "param"], body) in
       let cenv_fv_ref = ref [] in
       let (ufunct, args) =
@@ -1049,20 +1049,30 @@ let rec close fenv cenv = function
       let cenv_fv = (function | [cenv] -> cenv
                               | _ -> fatal_error "Closure.close(cenv_fv)")
                     !cenv_fv_ref in
-      (Ucode (body, ufunct, args, offsets_of_closure_env cenv_fv), Value_unknown)
-  | Lrun {uc_code; uc_offsets=(epo, offsets); uc_needs_env; uc_block} ->
+      (Ucode {uc_code=body; uc_function=ufunct; uc_cvars=args;
+              uc_offsets = offsets_of_closure_env cenv_fv;
+              (* no need to get [fenv_rec] out of [close_functions] ([close_one_function])
+                 since [fenv_rec] is built from [fenv] by adding to
+                 [fenv] only the [Value_closure]... entries for function(s)
+                 that are bound by the [let rec] that is being closure-converted *)
+              uc_marshalled_fenv = Marshal.to_string fenv []},
+       Value_unknown)
+  | Lrun {lc_code; lc_offsets=(epo, offsets); lc_marshalled_fenv; lc_block} ->
     let cenv' = match epo with
       | Some env_param ->
         Tbl.fold (fun id pos cenv ->
                 Tbl.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none)) cenv)
              offsets cenv
       | None -> cenv in
-    let funct = Lfunction(Curried, [Ident.create "param"], uc_code) in
-    let (clos, _) = close fenv cenv' funct in
+    let fenv' = (Marshal.from_string lc_marshalled_fenv 0
+                 : (Ident.t, value_approximation) Tbl.t) in
+    let funct = Lfunction(Curried, [Ident.create "param"], lc_code) in
+    let (clos, _) = close fenv' cenv' funct in
     let f = (function | Uclosure([f], _) -> f
                       | _ -> fatal_error "Closure.close(Lrun)")
             clos in
-    (Urun (f, uc_needs_env, uc_block), Value_unknown)
+    (Urun (f, lc_block), Value_unknown)
+  | Lescape _ -> failwith "Lescape not implement (yet)"
 
 and close_list fenv cenv = function
     [] -> []

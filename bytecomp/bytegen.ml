@@ -815,21 +815,22 @@ let rec comp_expr env exp sz cont =
       end
   | Lifused (_, exp) ->
       comp_expr env exp sz cont
-  | Lcode (exp, fv) ->
-    let lbl = new_label() in
-    let body = lambda_unit in
-    let to_compile =
-      { params = []; body = body; label = lbl;
-        free_vars = []; num_defs = 1; rec_vars = []; rec_pos = 0 } in
-    let rec positions pos delta = function
-            [] -> Ident.empty
-          | id :: rem -> Ident.add id pos (positions (pos + delta) delta rem) in
-    let e = {empty_env with ce_heap = positions 1 1 fv} in
-    let s = Marshal.to_string (e, exp) [] in
-    let b = Const_base(Const_string (s, None)) in
-    Stack.push to_compile functions_to_compile;
-    comp_args env (List.map (fun n -> Lvar n) fv) sz
-      (Kclosure(lbl, List.length fv) :: Kpush :: Kconst b :: Kmakeblock(2,0) :: cont)
+  | Lcode exp ->
+      let fv = IdentSet.elements (free_variables exp) in
+      let lbl = new_label() in
+      let body = lambda_unit in
+      let to_compile =
+        { params = []; body = body; label = lbl;
+          free_vars = []; num_defs = 1; rec_vars = []; rec_pos = 0 } in
+      let rec positions pos delta = function
+          [] -> Ident.empty
+        | id :: rem -> Ident.add id pos (positions (pos + delta) delta rem) in
+      let e = {empty_env with ce_heap = positions 1 1 fv} in
+      let s = Marshal.to_string (e, exp) [] in
+      let b = Const_base(Const_string (s, None)) in
+      Stack.push to_compile functions_to_compile;
+      comp_args env (List.map (fun n -> Lvar n) fv) sz
+        (Kclosure(lbl, List.length fv) :: Kpush :: Kconst b :: Kmakeblock(2,0) :: cont)
   | Lrun _ -> fatal_error "Bytegen.comp_expr: Lrun shouldn't be given to comp_expr."
   | Lescape _ -> fatal_error "Lescape compilation not (yet) implemented."
 

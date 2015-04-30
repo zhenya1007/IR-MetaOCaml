@@ -152,11 +152,11 @@ let rec lam ppf = function
         else if k = Lambda.Cached then "cache"
         else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
-  | Ucode (l,f,_, _) ->
-    fprintf ppf "@[<2>(code %a; fun: %a)@]" Printlambda.lambda l one_fun f
-  | Urun (uf, used, clos_vars) ->
+  | Ucode {uc_code;uc_function;_} ->
+    fprintf ppf "@[<2>(code %a; fun: %a)@]" Printlambda.lambda uc_code one_fun uc_function
+  | Urun (uf, clos_vars) ->
     let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
-    fprintf ppf "@[<2>(run@ %a@ (vars at: %#x%s))@]" one_fun uf (val_of_int (Obj.obj clos_vars)) (if used then "" else "(unused)")
+    fprintf ppf "@[<2>(run@ %a@ (vars at: %#x))@]" one_fun uf (val_of_int (Obj.obj clos_vars))
 
 and sequence ppf ulam = match ulam with
   | Usequence(l1, l2) ->

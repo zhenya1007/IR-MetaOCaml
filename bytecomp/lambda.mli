@@ -201,7 +201,7 @@ type lambda =
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
-  | Lcode of lambda * Ident.t list (* code X free variables: "open code term" *)
+  | Lcode of lambda
   | Lescape of lambda (* the escape before it is pre-processed *)
   | Lrun of code_description (* "closed code term" *)
 
@@ -223,21 +223,14 @@ and lambda_event_kind =
   | Lev_function
 
 and code_description = { (* Information for [run] *)
-  uc_code: lambda;
-  uc_offsets: Ident.t option * (Ident.t, int) Tbl.t;
+  lc_code: lambda;
+  lc_offsets: Ident.t option * (Ident.t, int) Tbl.t;
   (* The lexical environment in which to compile [uc_code]:
      maps ids to offsets in the already-allocated closure *)
-  uc_needs_env : bool; (* FIXME: this is probably a kludge,
-                          and a better way is probably to preserve the [fenv] argument
-                          from the call to [Closure.close] *)
-  (* Since  closure conversion does constant propagation, it is possible to get a function
-     whose body does not actually reference the environment as a result of the closure conversion.
-     e.g., let x = 4 in .<x>. is closure-converted to fun () -> 4
-     This flag keeps track of whether the function actually uses its environment *)
-  uc_block : Obj.t;
+  lc_marshalled_fenv : string; (* a serialized (using Marshal.to_string) copy of the fenv *)
+  lc_block : Obj.t;
   (* The pointer to the allocated closure that holds the values
-     of the free variables *)
-}
+     of the free variables *)}
 
 
 (* Sharing key *)

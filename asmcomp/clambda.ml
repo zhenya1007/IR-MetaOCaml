@@ -53,23 +53,29 @@ type ulambda =
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
   | Uassign of Ident.t * ulambda
   | Usend of meth_kind * ulambda * ulambda * ulambda list * Debuginfo.t
-  | Ucode of lambda * ufunction * ulambda list
-             * (Ident.t option * (Ident.t, int) Tbl.t)
-  | Urun of ufunction * bool * Obj.t
+  | Ucode of ucode_description
+  | Urun of ufunction * Obj.t
 
 and ufunction = {
   label  : function_label;
   arity  : int;
   params : Ident.t list;
   body   : ulambda;
-  dbg    : Debuginfo.t
+  dbg    : Debuginfo.t;
 }
 
 and ulambda_switch =
   { us_index_consts: int array;
-    us_actions_consts : ulambda array;
+    us_actions_consts: ulambda array;
     us_index_blocks: int array;
     us_actions_blocks: ulambda array}
+
+and ucode_description = {
+  uc_code: lambda;
+  uc_function: ufunction;
+  uc_cvars: ulambda list;
+  uc_offsets: (Ident.t option * (Ident.t, int) Tbl.t);
+  uc_marshalled_fenv: string;}
 
 (* Description of known functions *)
 

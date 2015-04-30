@@ -31,6 +31,9 @@
 /package-macosx
 /ocamlnat
 /ID
+/bin/
+/lib/
+/man/
 
 # /asmcomp/
 /asmcomp/*.o

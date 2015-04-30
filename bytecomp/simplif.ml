@@ -402,8 +402,8 @@ let simplify_lets lam =
   | Levent(l, _) -> count bv l
   | Lifused(v, l) ->
       if count_var v > 0 then count bv l
-  | Lcode (l, _) -> count bv l
-  | Lrun {uc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
+  | Lcode l -> count bv l
+  | Lrun {lc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
   | Lescape l -> count bv l
 
   and count_default bv sw = match sw.sw_failaction with

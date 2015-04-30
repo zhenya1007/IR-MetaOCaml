@@ -1370,52 +1370,51 @@ let rec transl = function
       end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
-  | Ucode(lam, f, clos_vars, offsets) ->
-    let uc = {Lambda.uc_code=lam;
-                     uc_offsets=offsets;
-                     uc_needs_env = List.length f.Clambda.params = 2;
-                     uc_block=Obj.repr []} in
-    let s = Marshal.to_string uc [] in
+  | Ucode{uc_code; uc_function; uc_cvars; uc_offsets; uc_marshalled_fenv} ->
+    let lc = {Lambda.lc_code=uc_code;
+              lc_offsets=uc_offsets;
+              lc_marshalled_fenv = uc_marshalled_fenv;
+              lc_block=Obj.repr []} in
+    let s = Marshal.to_string lc [] in
     let b =  Uconst_string s in
     (* unfolding transl_structured_constant *)
     let lbl = Compilenv.new_structured_constant b ~shared:false in
     (* essentially copied from the Uclosure case, and modified *)
-    let sz = fundecls_size [f] in
-    let block_size = sz + List.length clos_vars + 1 in
+    let sz = fundecls_size [uc_function] in
+    let block_size = sz + List.length uc_cvars + 1 in
     let header = alloc_closure_header block_size in
     let heap_block =
       header ::
-      Cconst_symbol f.label
+      Cconst_symbol uc_function.label
       :: int_const 1
-      :: (List.map transl clos_vars) @ [Cconst_symbol lbl]
+      :: (List.map transl uc_cvars) @ [Cconst_symbol lbl]
     in
-    Queue.add f functions;
-    if sz <> 2 then fatal_error "Unexpected size of heap block";
-    begin match offsets with
-    | (Some e, _) ->
-      begin match f.Clambda.params with
-      | [_; e'] -> if not (Ident.equal e e')
-                 then fatal_error "Cmmgen.transl(Ucode): env_param mismatch"
-      | [_] -> assert (not uc.uc_needs_env)
-      | _ -> fatal_error "Cmmgen.transl(Ucode): invalid parameters list"
-      end
-    | (None, _) ->
-      begin match f.Clambda.params with
-      | [_] -> ()
-      | _ -> fatal_error ("Cmmgen.transl(Ucode): env_param in function_description"
+    let sanity_check () =
+      if sz <> 2 then fatal_error "Unexpected size of heap block";
+      match uc_offsets with
+      | (Some e, _) ->
+          begin match uc_function.Clambda.params with
+          | [_; e'] -> if not (Ident.equal e e')
+              then fatal_error "Cmmgen.transl(Ucode): env_param mismatch"
+          | [_] -> ()
+          | _ -> fatal_error "Cmmgen.transl(Ucode): invalid parameters list"
+          end
+      | (None, _) ->
+          begin match uc_function.Clambda.params with
+          | [_] -> ()
+          | _ -> fatal_error ("Cmmgen.transl(Ucode): env_param in function_description"
                               ^ " but not in offsets")
-      end
-    end;
+          end
+    in
+    sanity_check ();
+    Queue.add uc_function functions;
     Cop(Calloc, heap_block)
-  | Urun(uf, env_used, block) ->
+  | Urun(uf, block) ->
       let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
-      if env_used then
-        let clos = Uclosure([uf], []) in
-        bind "run" (transl clos) (fun clos ->
+      let clos = Uclosure([uf], []) in
+      bind "run" (transl clos) (fun clos ->
           Cop(Capply(typ_addr, Debuginfo.none),
               [get_field clos 0; Cconst_int 0; Cconst_pointer (val_of_int (Obj.obj block))]))
-      else
-        Cop(Capply(typ_addr, Debuginfo.none), Cconst_pointer (val_of_int (Obj.obj (Obj.field block 0))) :: [Cconst_int 0])
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->

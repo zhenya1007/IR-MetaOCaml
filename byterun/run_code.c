@@ -28,6 +28,24 @@ CAMLprim value metaocaml_run_code(value block)
      caml_failwith("metaocaml_run_code: run_code_function is NULL (did Callback.register not get called?)");
 }
 
+CAMLprim value metaocaml_proces_code(value block)
+{
+  static value * process_code_function = NULL;
+  int i;
+  CAMLparam1(block);
+  CAMLlocal1(result);
+  if (process_code_function == NULL) {
+     /* First time around, look up by name */
+     process_code_function = caml_named_value("Metaocaml.process_code");
+  }
+  if (process_code_function != NULL) {
+     result = caml_callback(*process_code_function, block);
+     CAMLreturn(result);
+  }
+  else
+     caml_failwith("metaocaml_process_code: process_code_function is NULL (did Callback.register not get called?)");
+}
+
 #ifndef NATIVE_CODE
 
 /* copied from meta.c:caml_reify_bytecode(), and modified */

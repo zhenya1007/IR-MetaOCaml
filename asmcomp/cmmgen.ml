@@ -1066,6 +1066,8 @@ let simplif_primitive p =
       Pccall (default_prim "caml_obj_dup")
   | Prun ->
     Pccall (default_prim "metaocaml_run_code")
+  | Pcode ->
+    Pccall (default_prim "metaocaml_proces_code")
   | Pbigarrayref(unsafe, n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
   | Pbigarrayset(unsafe, n, Pbigarray_unknown, layout) ->

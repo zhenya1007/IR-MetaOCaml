@@ -379,9 +379,9 @@ let iter f = function
       f lam
   | Lifused (v, e) ->
       f e
-  | Lcode _ -> ()
-  | Lrun _ -> ()
-  | Lescape _ -> ()
+  | Lcode e -> f e
+  | Lrun e -> f e
+  | Lescape e -> f e
 
 
 module IdentSet =
@@ -413,7 +413,8 @@ let free_ids get l =
     | Lvar _ | Lconst _ | Lapply _
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
     | Lifthenelse _ | Lsequence _ | Lwhile _
-    | Lsend _ | Levent _ | Lifused _ | Lcode _ | Lrun _ | Lescape _ -> ()
+    | Lsend _ | Levent _ | Lifused _
+    | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ -> ()
   in free l; !fv
 
 let free_variables l =

@@ -829,7 +829,25 @@ let rec close fenv cenv = function
       in
       make_const (transl cst)
   | Lfunction(kind, params, body) as funct ->
-      close_one_function fenv cenv (Ident.create "fun") funct
+      let contains_escape = ref false in
+      Lambda.iter (function Lescape _ -> contains_escapes := true | _ -> ()) body;
+      if !contains_escape then
+        let (Uclosure([f], clos_vars), approx)
+          = close_one_function fenv cenv (Ident.create "fun") funct in
+        let pos = List.length clos_vars + if f.arity = 1 then 2 else 3 in
+        (* the part below copied from Lletrec case and modified slightly *)
+        let clos_ident = Ident.create "clos" in
+        let sb =
+          List.fold_right
+            (fun p sb ->
+               Tbl.add p (Uoffset(Uvar clos_ident, pos)) sb)
+            params Tbl.empty in
+        (Ulet(clos_ident, clos
+             , {f with ubody = substitute !Clflags.float_const_prop sb f.ubody}),
+         approx)
+        (*may need to also preserve the mapping from param names to offsets*)
+      else
+        close_one_function fenv cenv (Ident.create "fun") funct
 
     (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
        when fun_arity > nargs *)
@@ -1058,6 +1076,21 @@ let rec close fenv cenv = function
               uc_marshalled_fenv = Marshal.to_string fenv []},
        Value_unknown)
   | Lrun {lc_code; lc_offsets=(epo, offsets); lc_marshalled_fenv; lc_block} ->
+    let cenv' = match epo with
+      | Some env_param ->
+        Tbl.fold (fun id pos cenv ->
+                Tbl.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none)) cenv)
+             offsets cenv
+      | None -> cenv in
+    let fenv' = (Marshal.from_string lc_marshalled_fenv 0
+                 : (Ident.t, value_approximation) Tbl.t) in
+    let funct = Lfunction(Curried, [Ident.create "param"], lc_code) in
+    let (clos, _) = close fenv' cenv' funct in
+    let f = (function | Uclosure([f], _) -> f
+                      | _ -> fatal_error "Closure.close(Lrun)")
+            clos in
+    (Urun (f, lc_block), Value_unknown)
+  | Lrebuild {lc_code; lc_offsets=(epo, offsets); lc_marshalled_fenv; lc_block} ->
     let cenv' = match epo with
       | Some env_param ->
         Tbl.fold (fun id pos cenv ->

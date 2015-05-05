@@ -125,6 +125,8 @@ type primitive =
   | Pint_as_pointer
   (* run code *)
   | Prun
+  (* process escapes in a [code_description] *)
+  | Pcode
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -202,8 +204,9 @@ type lambda =
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
   | Lcode of lambda
-  | Lescape of lambda (* the escape before it is pre-processed *)
+  | Lescape of lambda (* the escape: what the user writes *)
   | Lrun of code_description (* "closed code term" *)
+  | Lrebuild of code_description (* process escapes in a code description *)
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
@@ -225,7 +228,7 @@ and lambda_event_kind =
 and code_description = { (* Information for [run] *)
   lc_code: lambda;
   lc_offsets: Ident.t option * (Ident.t, int) Tbl.t;
-  (* The lexical environment in which to compile [uc_code]:
+  (* The lexical environment in which to compile [lc_code]:
      maps ids to offsets in the already-allocated closure *)
   lc_marshalled_fenv : string; (* a serialized (using Marshal.to_string) copy of the fenv *)
   lc_block : Obj.t;
@@ -246,6 +249,7 @@ val iter: (lambda -> unit) -> lambda -> unit
 module IdentSet: Set.S with type elt = Ident.t
 val free_variables: lambda -> IdentSet.t
 val free_methods: lambda -> IdentSet.t
+val fold : (lambda -> 'a -> 'a) -> lambda -> 'a -> 'a
 
 val transl_normal_path: Path.t -> lambda   (* Path.t is already normal *)
 val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda

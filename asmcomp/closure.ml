@@ -832,20 +832,17 @@ let rec close fenv cenv = function
       let contains_escape = ref false in
       Lambda.iter (function Lescape _ -> contains_escapes := true | _ -> ()) body;
       if !contains_escape then
-        let (Uclosure([f], clos_vars), approx)
-          = close_one_function fenv cenv (Ident.create "fun") funct in
-        let pos = List.length clos_vars + if f.arity = 1 then 2 else 3 in
-        (* the part below copied from Lletrec case and modified slightly *)
-        let clos_ident = Ident.create "clos" in
-        let sb =
-          List.fold_right
-            (fun p sb ->
-               Tbl.add p (Uoffset(Uvar clos_ident, pos)) sb)
-            params Tbl.empty in
-        (Ulet(clos_ident, clos
-             , {f with ubody = substitute !Clflags.float_const_prop sb f.ubody}),
-         approx)
-        (*may need to also preserve the mapping from param names to offsets*)
+        let params_array = Ident.create "params_array" in
+        let fenv' = Tbl.add params_array Value_unknown fenv in
+        let (_, cenv') = List.fold_left
+            (fun p (pos,env) -> (pos+1,
+                                 Tbl.add p (Uoffset(Uvar params_array, pos)) env))
+            (0, cenv) in
+        let (Uclosure([f], cvars))
+          = close_one_function fenv' cenv' (Ident.create "fun")
+            (kind, params_array :: List.map (fun () -> Ident.create "param") params,
+             body) in
+        Uclosure ([{f with params_array = Some params_array}], cvars)
       else
         close_one_function fenv cenv (Ident.create "fun") funct
 

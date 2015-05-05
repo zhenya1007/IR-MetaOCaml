@@ -61,6 +61,7 @@ and ufunction = {
   arity  : int;
   params : Ident.t list;
   body   : ulambda;
+  params_array : Ident.t option;
   dbg    : Debuginfo.t;
 }
 

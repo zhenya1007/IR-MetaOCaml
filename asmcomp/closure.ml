@@ -1134,6 +1134,14 @@ let rec close fenv cenv = function
       let pos = List.fold_left
           (fun {lc_clos_vars_count; _} pos -> pos + lc_clos_vars_count)
           0 desc::splices in
+      let adjust_offsets pos = function
+        | (Some ep, tbl) -> (Some ep,
+                             Tbl.fold (fun (id, p) tbl' -> Tbl.add id (p+pos) tbl')
+                               Tbl.empty tbl)
+        | (None, _) as tbl -> tbl in
+      List.fold2 (fun {lc_offsets; _} pos tbl ->
+          let ofsets = adjust_offsets lc_offsets in
+        (*add the ids from this splice to the table for the code chunk*))
 
       (* for each splice, figure out the offsets, and close that splice in the
        environment that contains the offsets for the outer code

@@ -205,8 +205,11 @@ type lambda =
   | Lifused of Ident.t * lambda
   | Lcode of lambda
   | Lescape of lambda (* the escape: what the user writes *)
-  | Lrun of code_description (* "closed code term" *)
+  | Lrun of code_description (* "closed code term" FIXME: this might be redundant
+                                since I now have Lrebuild (below) *)
   | Lrebuild of code_description (* process escapes in a code description *)
+  | Lsplice of code_description (* what escape turns into, after it's been through
+                                   the compiler once*)
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
@@ -227,6 +230,9 @@ and lambda_event_kind =
 
 and code_description = { (* Information for [run] *)
   lc_code: lambda;
+  lc_clos_vars_start : int; (* offset from the start of the closure block to
+                               the beginning of the closure variables area *)
+  lc_clos_vars_count : int; (* the number of variables allocated in this closure *)
   lc_offsets: Ident.t option * (Ident.t, int) Tbl.t;
   (* The lexical environment in which to compile [lc_code]:
      maps ids to offsets in the already-allocated closure *)

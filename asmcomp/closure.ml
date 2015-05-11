@@ -830,19 +830,20 @@ let rec close fenv cenv = function
       make_const (transl cst)
   | Lfunction(kind, params, body) as funct ->
       let contains_escape = ref false in
-      Lambda.iter (function Lescape _ -> contains_escapes := true | _ -> ()) body;
+      Lambda.iter (function Lescape _ -> contains_escape := true | _ -> ()) body;
       if !contains_escape then
         let params_array = Ident.create "params_array" in
-        let fenv' = Tbl.add params_array Value_unknown fenv in
         let (_, cenv') = List.fold_left
-            (fun p (pos,env) -> (pos+1,
-                                 Tbl.add p (Uoffset(Uvar params_array, pos)) env))
+            (fun p (pos,env) ->
+               (pos+1,
+                Tbl.add p (Uprim(Pfield pos, [Uvar params_array], Debuginfo.none))
+                  env))
             (0, cenv) in
-        let (Uclosure([f], cvars))
-          = close_one_function fenv' cenv' (Ident.create "fun")
-            (kind, params_array :: List.map (fun () -> Ident.create "param") params,
-             body) in
-        Uclosure ([{f with params_array = Some params_array}], cvars)
+        let clos = function (Uclosure ([uf], args), _) ->
+          (Uclosure ([{uf with contains_escape = true}], args), Value_unknown)
+                          | _ -> failwith "Lfunction(contains_escape)" in
+        clos (close_one_function fenv' cenv' (ident.create "fun")
+                (kind, [params_array], body))
       else
         close_one_function fenv cenv (Ident.create "fun") funct
 
@@ -1064,7 +1065,10 @@ let rec close fenv cenv = function
       let cenv_fv = (function | [cenv] -> cenv
                               | _ -> fatal_error "Closure.close(cenv_fv)")
                     !cenv_fv_ref in
-      (Ucode {uc_code=body; uc_function=ufunct; uc_cvars=args;
+      let contains_escape = ref false in
+      Lambda.iter (function Lescape _ -> contains_escape := true | _ -> ()) body;
+      (Ucode {uc_code=body; uc_contains_escape = !contains_escape;
+              uc_function=ufunct; uc_cvars=args;
               uc_offsets = offsets_of_closure_env cenv_fv;
               (* no need to get [fenv_rec] out of [close_functions] ([close_one_function])
                  since [fenv_rec] is built from [fenv] by adding to
@@ -1087,22 +1091,59 @@ let rec close fenv cenv = function
                       | _ -> fatal_error "Closure.close(Lrun)")
             clos in
     (Urun (f, lc_block), Value_unknown)
-  | Lrebuild {lc_code; lc_offsets=(epo, offsets); lc_marshalled_fenv; lc_block} ->
-    let cenv' = match epo with
+  | Lescape c ->
+      let (ulam, _) = close fenv cenv c in
+      Uescape ulam
+  | Lrebuild ({lc_code; lc_offsets=(epo, offsets); lc_marshalled_fenv; lc_block} as desc) ->
+    let (cenv', pos) = match epo with
       | Some env_param ->
         Tbl.fold (fun id pos cenv ->
                 Tbl.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none)) cenv)
              offsets cenv
-      | None -> cenv in
+      | None -> (cenv, 0) in
     let fenv' = (Marshal.from_string lc_marshalled_fenv 0
                  : (Ident.t, value_approximation) Tbl.t) in
+    let collect_escapes =
+      let rec loop n = function
+          Lsplice cd  -> if n = 1 then [cd] else []
+        | Lvar _ | Lconst _ -> []
+        | Lapply (l1, l2, _) -> (loop n l1) @ (loop n l2)
+        | Lfunction (_, _, lam) -> (loop n lam )
+        | Llet (_, _, l1, l2) -> (loop n l1) @ (loop n l2)
+        | Lletrec (lst, lam) ->
+            (List.fold_left (fun (_, lam) acc -> (loop n lam) @ acc) lst []) @ (loop n lam)
+        | Lprim (_, lams) -> List.fold_left (fun lam acc -> (loop n lam) @ acc) lams []
+        | Lswitch _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
+        | Lstringswitch _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
+        | Lstaticraise _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
+        | Lstaticcatch _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
+        | Ltrywith _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
+        | Lifthenelse (lam1, lam2, lam3) -> (loop n lam1) @ (loop n lam2) @ (loop n lam3)
+        | Lsequence (lam1, lam2) -> (loop n lam1) @ (loop n lam2)
+        | Lwhile (lam1, lam2) -> (loop n lam1) @ (loop n lam2)
+        | Lfor (_, lam1, lam2, _, lam3) -> (loop n lam1) @ (loop n lam2) (loop n lam3)
+        | Lassign (_, lam) -> loop n lam
+        | Lsend _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
+        | Levent _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
+        | Lifused (_, lam) -> loop n lam
+        | Lcode lam -> loop (n+1) lam
+        | Lescape _ -> failwith "closure.ml:Lrebuidl(Lescape)"
+        | Lrebuild _ -> failwith "closure.ml:Lrebuild(Lrebuild)"
+      loop 1 lam in
+      let splices = collect_escapes lc in
+      let pos = List.fold_left
+          (fun {lc_clos_vars_count; _} pos -> pos + lc_clos_vars_count)
+          0 desc::splices in
+
+      (* for each splice, figure out the offsets, and close that splice in the
+       environment that contains the offsets for the outer code
+       + the offsets for the splice I am looking at *)
     let funct = Lfunction(Curried, [Ident.create "param"], lc_code) in
     let (clos, _) = close fenv' cenv' funct in
     let f = (function | Uclosure([f], _) -> f
                       | _ -> fatal_error "Closure.close(Lrun)")
             clos in
     (Urun (f, lc_block), Value_unknown)
-  | Lescape _ -> failwith "Lescape not implement (yet)"
 
 and close_list fenv cenv = function
     [] -> []
@@ -1205,6 +1246,7 @@ and close_functions ?cenv_fv_ref fenv cenv fun_defs =
         arity  = fundesc.fun_arity;
         params = fun_params;
         body   = ubody;
+        contains_escape = false;
         dbg;
       }
     in

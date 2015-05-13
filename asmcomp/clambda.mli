@@ -62,7 +62,7 @@ and ufunction = {
   arity  : int;
   params : Ident.t list;
   body   : ulambda;
-  contains_escape : bool
+  contains_escape : bool;
   dbg    : Debuginfo.t;
 }
 

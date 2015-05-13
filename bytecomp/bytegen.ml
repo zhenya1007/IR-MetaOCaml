@@ -833,6 +833,8 @@ let rec comp_expr env exp sz cont =
         (Kclosure(lbl, List.length fv) :: Kpush :: Kconst b :: Kmakeblock(2,0) :: cont)
   | Lrun _ -> fatal_error "Bytegen.comp_expr: Lrun shouldn't be given to comp_expr."
   | Lescape _ -> fatal_error "Lescape compilation not (yet) implemented."
+  | Lsplice _ -> fatal_error "Lescape compilation not (yet) implemented."
+  | Lrebuild _ -> fatal_error "Lescape compilation not (yet) implemented."
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
    The values of eN ... e2 are pushed on the stack, e2 at top of stack,

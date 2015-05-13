@@ -87,6 +87,8 @@ let rec eliminate_ref id = function
   | Lcode _ as c -> c
   | Lrun _ as uc -> uc
   | Lescape _ as e -> e
+  | Lrebuild _ as e -> e
+  | Lsplice _ as e -> e
 
 (* Simplification of exits *)
 
@@ -161,6 +163,8 @@ let simplify_exits lam =
   | Lcode _ -> ()
   | Lrun _ -> ()
   | Lescape _ -> ()
+  | Lrebuild _ -> ()
+  | Lsplice _ -> ()
 
 
   and count_default sw = match sw.sw_failaction with
@@ -283,6 +287,8 @@ let simplify_exits lam =
   | Lcode _ as c -> c
   | Lrun _ as uc -> uc
   | Lescape _ as e -> e
+  | Lrebuild _ as e -> e
+  | Lsplice _ as e -> e
   in
   simplif lam
 
@@ -405,6 +411,8 @@ let simplify_lets lam =
   | Lcode l -> count bv l
   | Lrun {lc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
   | Lescape l -> count bv l
+  | Lrebuild {lc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
+  | Lsplice {lc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
 
   and count_default bv sw = match sw.sw_failaction with
   | None -> ()
@@ -514,6 +522,8 @@ let simplify_lets lam =
   | Lcode _ as c -> c
   | Lrun _ as uc -> uc
   | Lescape _ as e -> e
+  | Lrebuild _ as e -> e
+  | Lsplice _ as e -> e
   in
   simplif lam
 
@@ -598,6 +608,8 @@ let rec emit_tail_infos is_tail lambda =
   | Lcode _ -> ()
   | Lrun _ -> ()
   | Lescape _ -> ()
+  | Lrebuild _ -> ()
+  | Lsplice _ -> ()
 and list_emit_tail_infos_fun f is_tail =
   List.iter (fun x -> emit_tail_infos is_tail (f x))
 and list_emit_tail_infos is_tail =

@@ -239,6 +239,7 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Prun -> fprintf ppf "run"
+  | Prebuild -> fprintf ppf "rebuild"
 
 let rec lam ppf = function
   | Lvar id ->
@@ -386,7 +387,11 @@ let rec lam ppf = function
   | Lrun {lc_code=expr; _} ->
       fprintf ppf "@[<2>(ucode:@ %a)@]" lam expr
   | Lescape expr ->
-      fprintf ppf "@[<2>(escape:@ %a)@]"lam expr
+      fprintf ppf "@[<2>(escape:@ %a)@]" lam expr
+  | Lrebuild {lc_code=expr; _} ->
+      fprintf ppf "@[<2>(rebuild:@ %a)@]" lam expr
+  | Lsplice {lc_code=expr; _} ->
+      fprintf ppf "@[<2>(splice:@ %a)@]" lam expr
 
 and sequence ppf = function
   | Lsequence(l1, l2) ->

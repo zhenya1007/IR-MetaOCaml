@@ -125,6 +125,8 @@ type primitive =
   | Pint_as_pointer
   (* run code *)
   | Prun
+  (* process escapes in a [code_description] *)
+  | Prebuild
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -178,6 +180,8 @@ type lambda =
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch
+(* switch on strings, clauses are sorted by string order,
+   strings are pairwise distinct *)
   | Lstringswitch of lambda * (string * lambda) list * lambda option
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
@@ -191,16 +195,20 @@ type lambda =
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
   | Lcode of lambda
-  | Lescape of lambda
-  | Lrun of code_description (* "closed code term" *)
+  | Lescape of lambda (* the escape: what the user writes *)
+  | Lrun of code_description (* "closed code term" FIXME: this might be redundant
+                                since I now have Lrebuild (below) *)
+  | Lrebuild of code_description (* process escapes in a code description:
+                                    the escapes are marked with Lsplice (below) *)
+  | Lsplice of code_description (* what escape turns into, after it's been through
+                                   the compiler once*)
 
 and lambda_switch =
-  { sw_numconsts: int;
-    sw_consts: (int * lambda) list;
-    sw_numblocks: int;
-    sw_blocks: (int * lambda) list;
-    sw_failaction : lambda option}
-
+  { sw_numconsts: int;                  (* Number of integer cases *)
+    sw_consts: (int * lambda) list;     (* Integer cases *)
+    sw_numblocks: int;                  (* Number of tag block cases *)
+    sw_blocks: (int * lambda) list;     (* Tag block cases *)
+    sw_failaction : lambda option}      (* Action to take if failure *)
 and lambda_event =
   { lev_loc: Location.t;
     lev_kind: lambda_event_kind;
@@ -214,8 +222,11 @@ and lambda_event_kind =
 
 and code_description = { (* Information for [run] *)
   lc_code: lambda;
+  lc_clos_vars_start : int; (* offset from the start of the closure block to
+                               the beginning of the closure variables area *)
+  lc_clos_vars_count : int; (* the number of variables allocated in this closure *)
   lc_offsets: Ident.t option * (Ident.t, int) Tbl.t;
-  (* The lexical environment in which to compile [uc_code]:
+  (* The lexical environment in which to compile [lc_code]:
      maps ids to offsets in the already-allocated closure *)
   lc_marshalled_fenv : string; (* a serialized (using Marshal.to_string) copy of the fenv *)
   lc_block : Obj.t;
@@ -288,7 +299,7 @@ let make_key e =
     | Lsend (m,e1,e2,es,loc) ->
         Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Location.none)
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
-    | Lcode _ | Lrun _ | Lescape _
+    | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ | Lsplice _
     | Lletrec _|Lfunction _
     | Lfor _ | Lwhile _
 (* Beware: (PR#6412) the event argument to Levent
@@ -380,8 +391,11 @@ let iter f = function
   | Lifused (v, e) ->
       f e
   | Lcode e -> f e
-  | Lrun e -> f e
+  | Lrun {lc_code; _} -> f lc_code
   | Lescape e -> f e
+  | Lrebuild {lc_code; _} -> f lc_code
+  | Lsplice {lc_code; _} -> f lc_code
+
 
 
 module IdentSet =
@@ -414,7 +428,7 @@ let free_ids get l =
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
     | Lifthenelse _ | Lsequence _ | Lwhile _
     | Lsend _ | Levent _ | Lifused _
-    | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ -> ()
+    | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ | Lsplice _ -> ()
   in free l; !fv
 
 let free_variables l =
@@ -521,6 +535,8 @@ let subst_lambda s lam =
   | Lcode _ as c -> c
   | Lrun _ as uc -> uc
   | Lescape _ as e -> e
+  | Lrebuild _ as e -> e
+  | Lsplice _ as e -> e
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
   and subst_strcase (key, case) = (key, subst case)

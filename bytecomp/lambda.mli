@@ -126,7 +126,7 @@ type primitive =
   (* run code *)
   | Prun
   (* process escapes in a [code_description] *)
-  | Pcode
+  | Prebuild
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -207,7 +207,8 @@ type lambda =
   | Lescape of lambda (* the escape: what the user writes *)
   | Lrun of code_description (* "closed code term" FIXME: this might be redundant
                                 since I now have Lrebuild (below) *)
-  | Lrebuild of code_description (* process escapes in a code description *)
+  | Lrebuild of code_description (* process escapes in a code description:
+                                    the escapes are marked with Lsplice (below) *)
   | Lsplice of code_description (* what escape turns into, after it's been through
                                    the compiler once*)
 
@@ -255,7 +256,6 @@ val iter: (lambda -> unit) -> lambda -> unit
 module IdentSet: Set.S with type elt = Ident.t
 val free_variables: lambda -> IdentSet.t
 val free_methods: lambda -> IdentSet.t
-val fold : (lambda -> 'a -> 'a) -> lambda -> 'a -> 'a
 
 val transl_normal_path: Path.t -> lambda   (* Path.t is already normal *)
 val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda

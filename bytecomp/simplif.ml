@@ -410,7 +410,7 @@ let simplify_lets lam =
       if count_var v > 0 then count bv l
   | Lcode l -> count bv l
   | Lrun {lc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
-  | Lescape l -> count bv l
+  | Lescape (_, l)-> count bv l
   | Lrebuild {lc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
   | Lsplice {lc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
 

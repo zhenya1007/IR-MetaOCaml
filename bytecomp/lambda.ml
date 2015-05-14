@@ -195,7 +195,7 @@ type lambda =
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
   | Lcode of lambda
-  | Lescape of lambda (* the escape: what the user writes *)
+  | Lescape of int ref * lambda (* the escape: what the user writes *)
   | Lrun of code_description (* "closed code term" FIXME: this might be redundant
                                 since I now have Lrebuild (below) *)
   | Lrebuild of code_description (* process escapes in a code description:
@@ -392,7 +392,7 @@ let iter f = function
       f e
   | Lcode e -> f e
   | Lrun {lc_code; _} -> f lc_code
-  | Lescape e -> f e
+  | Lescape (_, e) -> f e
   | Lrebuild {lc_code; _} -> f lc_code
   | Lsplice {lc_code; _} -> f lc_code
 
@@ -436,6 +436,13 @@ let free_variables l =
 
 let free_methods l =
   free_ids (function Lsend(Self, Lvar meth, obj, _, _) -> [meth] | _ -> []) l
+
+let adjust_escape_levels n lam =
+  let rec adjust_level n = function
+      Lcode lam -> iter (adjust_level (n+1)) lam
+    | Lescape (ir, lam) -> ir := n; iter (adjust_level (n-1)) lam
+    | lam -> iter (adjust_level n) lam in
+  adjust_level n lam
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0

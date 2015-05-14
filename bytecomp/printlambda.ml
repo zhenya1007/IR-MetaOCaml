@@ -386,7 +386,7 @@ let rec lam ppf = function
     fprintf ppf "@[<2>(code:@ %a)@]" lam expr
   | Lrun {lc_code=expr; _} ->
       fprintf ppf "@[<2>(ucode:@ %a)@]" lam expr
-  | Lescape expr ->
+  | Lescape (_, expr) ->
       fprintf ppf "@[<2>(escape:@ %a)@]" lam expr
   | Lrebuild {lc_code=expr; _} ->
       fprintf ppf "@[<2>(rebuild:@ %a)@]" lam expr

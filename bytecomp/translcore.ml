@@ -925,8 +925,9 @@ and transl_exp0 e =
     let c = transl_exp e in
     Lprim(Prun, [c])
   | Texp_escape e ->
-      let c = transl_exp e in
-      Lescape c
+      let c = transl_exp e
+      and r = ref 0 in
+      Lescape (r, c)
 
 and transl_list expr_list =
   List.map transl_exp expr_list

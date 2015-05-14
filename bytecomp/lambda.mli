@@ -204,7 +204,7 @@ type lambda =
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
   | Lcode of lambda
-  | Lescape of lambda (* the escape: what the user writes *)
+  | Lescape of int ref * lambda (* the escape: what the user writes *)
   | Lrun of code_description (* "closed code term" FIXME: this might be redundant
                                 since I now have Lrebuild (below) *)
   | Lrebuild of code_description (* process escapes in a code description:
@@ -242,6 +242,10 @@ and code_description = { (* Information for [run] *)
   (* The pointer to the allocated closure that holds the values
      of the free variables *)}
 
+(* adjust_escape_levels n t ->
+   Adjust levels in Lescape for sub-terms of term [t] on the assumption
+   that [t] itself is at level [n]. *)
+val adjust_escape_levels: int -> lambda -> unit
 
 (* Sharing key *)
 val make_key: lambda -> lambda option

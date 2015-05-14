@@ -1091,59 +1091,36 @@ let rec close fenv cenv = function
                       | _ -> fatal_error "Closure.close(Lrun)")
             clos in
     (Urun (f, lc_block), Value_unknown)
-  | Lescape c ->
-      let (ulam, _) = close fenv cenv c in
-      Uescape ulam
+  | Lescape (n, lam) ->
+      let (ulam, _) = close fenv cenv lam in
+      (Uescape ulam, Value_unknown)
   | Lrebuild ({lc_code; lc_offsets=(epo, offsets); lc_marshalled_fenv; lc_block} as desc) ->
-    let (cenv', pos) = match epo with
-      | Some env_param ->
-        Tbl.fold (fun id pos cenv ->
-                Tbl.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none)) cenv)
-             offsets cenv
+      let (cenv', (min, max)) = match epo with
+        | Some env_param ->
+            Tbl.fold (fun id pos cenv ->
+                (Tbl.add id
+                   (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none)) cenv),
+                ((if pos < min then pos else min), (if max < pos then pos else max)))
+              offsets (cenv, (max_int, min_int))
       | None -> (cenv, 0) in
-    let fenv' = (Marshal.from_string lc_marshalled_fenv 0
+      let fenv' = (Marshal.from_string lc_marshalled_fenv 0
                  : (Ident.t, value_approximation) Tbl.t) in
-    let collect_escapes =
-      let rec loop n = function
-          Lsplice cd  -> if n = 1 then [cd] else []
-        | Lvar _ | Lconst _ -> []
-        | Lapply (l1, l2, _) -> (loop n l1) @ (loop n l2)
-        | Lfunction (_, _, lam) -> (loop n lam )
-        | Llet (_, _, l1, l2) -> (loop n l1) @ (loop n l2)
-        | Lletrec (lst, lam) ->
-            (List.fold_left (fun (_, lam) acc -> (loop n lam) @ acc) lst []) @ (loop n lam)
-        | Lprim (_, lams) -> List.fold_left (fun lam acc -> (loop n lam) @ acc) lams []
-        | Lswitch _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
-        | Lstringswitch _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
-        | Lstaticraise _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
-        | Lstaticcatch _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
-        | Ltrywith _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
-        | Lifthenelse (lam1, lam2, lam3) -> (loop n lam1) @ (loop n lam2) @ (loop n lam3)
-        | Lsequence (lam1, lam2) -> (loop n lam1) @ (loop n lam2)
-        | Lwhile (lam1, lam2) -> (loop n lam1) @ (loop n lam2)
-        | Lfor (_, lam1, lam2, _, lam3) -> (loop n lam1) @ (loop n lam2) (loop n lam3)
-        | Lassign (_, lam) -> loop n lam
-        | Lsend _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
-        | Levent _ -> [] (*FIXME: fill this in later; doesn't matter for initial testing*)
-        | Lifused (_, lam) -> loop n lam
-        | Lcode lam -> loop (n+1) lam
-        | Lescape _ -> failwith "closure.ml:Lrebuidl(Lescape)"
-        | Lrebuild _ -> failwith "closure.ml:Lrebuild(Lrebuild)"
-      loop 1 lam in
-      let splices = collect_escapes lc in
-      let pos = List.fold_left
-          (fun {lc_clos_vars_count; _} pos -> pos + lc_clos_vars_count)
-          0 desc::splices in
+      let spref = ref [] in
+      let splices = Lambda.iter
+          (function Lescape(ref 1, _) as sp -> spref := (sp, count_vars sp)::!spref
+                  | _ -> ()) lc_code;
+        !spref in
       let adjust_offsets pos = function
-        | (Some ep, tbl) -> (Some ep,
-                             Tbl.fold (fun (id, p) tbl' -> Tbl.add id (p+pos) tbl')
-                               Tbl.empty tbl)
+        | (Some ep, tbl) -> (Some ep, Tbl.map (fun _ p ->  p+pos) tbl)
         | (None, _) as tbl -> tbl in
-      let new_offsets = List.fold2 (fun {lc_offsets; _} pos tbl ->
-          let offsets = adjust_offsets pos lc_offsets in
-          match offsets with
-          | (Some ep, tbl') -> Tbl.iter (fun (id, p) -> Tbl.add id p tbl) tbl'
-          | (None, _) -> tbl) splices pos in
+      let new_offsets = List.fold_left
+          (fun ({lc_offsets=(epo',offsets'); _}, vars_count) (pos,tbl) ->
+             let sp_offsets = adjust_offsets pos offsets' in
+             match sp_offsets with
+             | (Some ep, tbl') -> (pos+vars_count,
+                                   Tbl.iter (fun (id, p) -> Tbl.add id p tbl) tbl')
+             | (None, _) -> tbl)
+          splices ((max+1), offsets) in
       let (cenv'', pos) = (match epo with
       | Some env_param ->
         Tbl.fold (fun id pos cenv ->

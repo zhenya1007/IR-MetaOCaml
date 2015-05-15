@@ -1095,43 +1095,49 @@ let rec close fenv cenv = function
       let (ulam, _) = close fenv cenv lam in
       (Uescape ulam, Value_unknown)
   | Lrebuild ({lc_code; lc_offsets=(epo, offsets); lc_marshalled_fenv; lc_block} as desc) ->
-      let (cenv', (min, max)) = match epo with
-        | Some env_param ->
-            Tbl.fold (fun id pos cenv ->
-                (Tbl.add id
-                   (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none)) cenv),
-                ((if pos < min then pos else min), (if max < pos then pos else max)))
-              offsets (cenv, (max_int, min_int))
-      | None -> (cenv, 0) in
+      let cv_ofst_max = match epo with
+        | Some _ -> Tbl.fold (fun _ pos p_max -> max pos p_max) offsets min_int
+        | None -> 0 in
       let fenv' = (Marshal.from_string lc_marshalled_fenv 0
                  : (Ident.t, value_approximation) Tbl.t) in
+      (* the object of the exercise is to lay out each of the splice's
+         closure variables in the closure block of the code the splice
+         is being spliced into, following the "regular" closure variables
+         of that block *)
       let spref = ref [] in
       let splices = Lambda.iter
-          (function Lescape(ref 1, _) as sp -> spref := (sp, count_vars sp)::!spref
-                  | _ -> ()) lc_code;
+          (function
+              Lescape(r, sp) when !r = 1 -> spref := sp::!spref
+            | _ -> ()) lc_code;
         !spref in
+      let sp_offsets = List.fold_left
+          (fun pos {lc_offsets=(epo,offsets); _} ->
+             let r = ref pos in
+             Tbl.iter (fun _ -> inc r) offsets;
+             !r) splices in
       let adjust_offsets pos = function
-        | (Some ep, tbl) -> (Some ep, Tbl.map (fun _ p ->  p+pos) tbl)
-        | (None, _) as tbl -> tbl in
-      let new_offsets = List.fold_left
-          (fun ({lc_offsets=(epo',offsets'); _}, vars_count) (pos,tbl) ->
-             let sp_offsets = adjust_offsets pos offsets' in
-             match sp_offsets with
-             | (Some ep, tbl') -> (pos+vars_count,
-                                   Tbl.iter (fun (id, p) -> Tbl.add id p tbl) tbl')
-             | (None, _) -> tbl)
-          splices ((max+1), offsets) in
-      let (cenv'', pos) = (match epo with
+        | (Some ep, tbl) -> (Some ep, Tbl.map (fun _ p -> p+pos) tbl)
+        | (None, _) as ofst -> ofst in
+      let new_offsets = List.fold_left2
+          (fun tbl {lc_offsets;_} pos ->
+               match adjust_offsets pos lc_offsets with
+               | (Some ep', tbl') ->
+                   Tbl.fold (fun id pos' tbl -> Tbl.add id opos' tbl) tbl'
+               | (None, _) -> tbl)
+          offsets sp sp_offsets in
+      (* TODO: remember to store [new_offsets] (suitably updated)
+         in the ucode_description returned from this function! *)
+      let cenv' = match epo with
       | Some env_param ->
         Tbl.fold (fun id pos cenv ->
                 Tbl.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none)) cenv)
-             offsets cenv'
-      | None -> (cenv, 0)) in
+          new_offsets cenv
+      | None -> cenv in
 
       let splice_in_code lam =
         let rec f = function
-              (Lvar _
-              | Lconst _) as lam -> lam
+            (Lvar _
+            | Lconst _) as lam -> lam
           | Lapply(fn, args, t) ->
               Lapply (f fn, List.map f args, t)
           | Lfunction(kind, params, body) ->
@@ -1189,18 +1195,28 @@ let rec close fenv cenv = function
       let cenv_fv = (function | [cenv] -> cenv
                               | _ -> fatal_error "Closure.close(cenv_fv)")
                     !cenv_fv_ref in
+      let uc_offsets = match (offsets_of_closure_env cenv_fv) with
+        | (Some ep, offsets) ->
+            let pos = let r = ref 0 in Tbl.iter (fun _ -> inc r); !r in
+            let f = function
+            | (Some ep', offsets') ->
+                Some (ep,
+                      Tbl.fold (fun id pos tbl -> Tbl.add id pos tbl) offsets' offsets)
+            | None -> Some (ep, offsets) in
+            f (adjust_offsets pos new_offsets)
+        | (None, _) -> new_offsets in
       let contains_escape = ref false in
       Lambda.iter (function Lescape _ -> contains_escape := true | _ -> ()) body;
       (Urebuild {ur_code= {uc_code=body; uc_contains_escape = !contains_escape;
-              uc_function=ufunct; uc_cvars=args;
-              uc_offsets = offsets_of_closure_env cenv_fv;
-              (* no need to get [fenv_rec] out of [close_functions] ([close_one_function])
-                 since [fenv_rec] is built from [fenv] by adding to
-                 [fenv] only the [Value_closure]... entries for function(s)
-                 that are bound by the [let rec] that is being closure-converted *)
-                           uc_marshalled_fenv = Marshal.to_string fenv []}
-                ur_splices=splices},
-       Value_unknown)
+                           uc_function=ufunct; uc_cvars=args;
+                           uc_offsets;
+                           (* no need to get [fenv_rec] out of [close_functions] ([close_one_function])
+                              since [fenv_rec] is built from [fenv] by adding to
+                              [fenv] only the [Value_closure]... entries for function(s)
+                              that are bound by the [let rec] that is being closure-converted *)
+                           uc_marshalled_fenv = Marshal.to_string fenv [];
+                           uc_splices=splices},
+                          Value_unknown)
 
 and close_list fenv cenv = function
     [] -> []

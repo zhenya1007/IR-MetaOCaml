@@ -56,6 +56,7 @@ type ulambda =
   | Ucode of ucode_description
   | Urun of ufunction * Obj.t
   | Uescape of ulambda
+  | Urebuild of ucode_description * (code_description * int) list
 
 and ufunction = {
   label  : function_label;
@@ -77,7 +78,7 @@ and ucode_description = {
   uc_contains_escape : bool;
   uc_function: ufunction;
   uc_cvars: ulambda list;
-  uc_offsets: (Ident.t option * (Ident.t, int) Tbl.t);
+  uc_offsets: (Ident.t * (Ident.t, int) Tbl.t) option;
   uc_marshalled_fenv: string;}
 
 (* Description of known functions *)

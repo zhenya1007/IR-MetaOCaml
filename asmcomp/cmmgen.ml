@@ -1066,7 +1066,7 @@ let simplif_primitive p =
       Pccall (default_prim "caml_obj_dup")
   | Prun ->
     Pccall (default_prim "metaocaml_run_code")
-  | Pcode ->
+  | Prebuild ->
     Pccall (default_prim "metaocaml_proces_code")
   | Pbigarrayref(unsafe, n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
@@ -1382,7 +1382,7 @@ let rec transl = function
     (* unfolding transl_structured_constant *)
     let lbl = Compilenv.new_structured_constant b ~shared:false in
     (* essentially copied from the Uclosure case, and modified *)
-    let sz = fundecls_size [uc_function] in
+        let sz = fundecls_size [uc_function] in
     let block_size = sz + List.length uc_cvars + 1 in
     let header = alloc_closure_header block_size in
     let heap_block =
@@ -1394,14 +1394,14 @@ let rec transl = function
     let sanity_check () =
       if sz <> 2 then fatal_error "Unexpected size of heap block";
       match uc_offsets with
-      | (Some e, _) ->
+      | Some(e, _) ->
           begin match uc_function.Clambda.params with
           | [_; e'] -> if not (Ident.equal e e')
               then fatal_error "Cmmgen.transl(Ucode): env_param mismatch"
           | [_] -> ()
           | _ -> fatal_error "Cmmgen.transl(Ucode): invalid parameters list"
           end
-      | (None, _) ->
+      | None ->
           begin match uc_function.Clambda.params with
           | [_] -> ()
           | _ -> fatal_error ("Cmmgen.transl(Ucode): env_param in function_description"
@@ -1411,12 +1411,52 @@ let rec transl = function
     sanity_check ();
     Queue.add uc_function functions;
     Cop(Calloc, heap_block)
+  | Urebuild ({uc_code; uc_contains_escape; uc_function; uc_cvars;
+               uc_offsets; uc_marshalled_fenv}, splices_info) ->
+    let lc = {Lambda.lc_code=uc_code;
+              lc_offsets=uc_offsets;
+              lc_marshalled_fenv = uc_marshalled_fenv;
+              lc_block=Obj.repr []} in
+    let s = Marshal.to_string lc [] in
+    let b =  Uconst_string s in
+    (* unfolding transl_structured_constant *)
+    let lbl = Compilenv.new_structured_constant b ~shared:false in
+    (* essentially copied from the Uclosure case, and modified *)
+    let sz = fundecls_size [uc_function] in
+    let ids_cnt = let r = ref 0 in match uc_offsets with
+      | Some(_, offsets) -> Tbl.iter (fun _ _ -> incr r) offsets; !r
+      | None -> !r in
+    let block_size = sz + List.length uc_cvars + ids_cnt + 1 in
+    let header = alloc_closure_header block_size in
+    let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
+    let closure_vars_of {lc_offsets; lc_block; _} =
+      match lc_offsets with
+      | Some(_, offsets) ->
+          let lst = Tbl.fold
+            (fun _ pos lst ->
+              (pos, (get_field
+                       (Cconst_pointer (val_of_int (Obj.obj lc_block))) pos))::lst)
+            offsets [] in
+          let ls = List.sort (fun (p1, _) (p2, _) -> compare p1 p2) lst in
+          let (_, ls') = List.split ls in
+          ls'
+      | None -> [] in
+    let heap_block =
+      header ::
+      Cconst_symbol uc_function.label
+      :: int_const 1
+      :: (List.map transl uc_cvars)
+        @ List.flatten (List.map (fun (sp, _) -> closure_vars_of sp) splices_info)
+        @ [Cconst_symbol lbl] in
+    Queue.add uc_function functions;
+    Cop(Calloc, heap_block)
   | Urun(uf, block) ->
       let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
       let clos = Uclosure([uf], []) in
       bind "run" (transl clos) (fun clos ->
           Cop(Capply(typ_addr, Debuginfo.none),
               [get_field clos 0; Cconst_int 0; Cconst_pointer (val_of_int (Obj.obj block))]))
+  | Uescape _ -> failwith "Uescape not (yte) implemented"
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->

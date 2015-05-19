@@ -204,9 +204,8 @@ type lambda =
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
   | Lcode of lambda
-  | Lescape of int ref * lambda (* the escape: what the user writes *)
-  | Lrun of code_description (* "closed code term" FIXME: this might be redundant
-                                since I now have Lrebuild (below) *)
+  | Lescape of int * lambda (* the escape: what the user writes *)
+  | Lrun of code_description (* produced by calling [run_code] *)
   | Lrebuild of code_description (* process escapes in a code description:
                                     the escapes are marked with Lsplice (below) *)
   | Lsplice of code_description (* what escape turns into, after it's been through
@@ -231,10 +230,7 @@ and lambda_event_kind =
 
 and code_description = { (* Information for [run] *)
   lc_code: lambda;
-  lc_clos_vars_start : int; (* offset from the start of the closure block to
-                               the beginning of the closure variables area *)
-  lc_clos_vars_count : int; (* the number of variables allocated in this closure *)
-  lc_offsets: Ident.t option * (Ident.t, int) Tbl.t;
+  lc_offsets: (Ident.t * (Ident.t, int) Tbl.t) option;
   (* The lexical environment in which to compile [lc_code]:
      maps ids to offsets in the already-allocated closure *)
   lc_marshalled_fenv : string; (* a serialized (using Marshal.to_string) copy of the fenv *)
@@ -242,10 +238,10 @@ and code_description = { (* Information for [run] *)
   (* The pointer to the allocated closure that holds the values
      of the free variables *)}
 
-(* adjust_escape_levels n t ->
+(* adjust_escape_level n t ->
    Adjust levels in Lescape for sub-terms of term [t] on the assumption
    that [t] itself is at level [n]. *)
-val adjust_escape_levels: int -> lambda -> unit
+val adjust_escape_level: int -> lambda -> lambda
 
 (* Sharing key *)
 val make_key: lambda -> lambda option

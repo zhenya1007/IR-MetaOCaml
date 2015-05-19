@@ -409,10 +409,22 @@ let simplify_lets lam =
   | Lifused(v, l) ->
       if count_var v > 0 then count bv l
   | Lcode l -> count bv l
-  | Lrun {lc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
+  | Lrun {lc_offsets} ->
+      let it = function
+        | Some (_, t) -> Tbl.iter (fun id _ -> use_var bv id 1) t
+        | None -> () in
+      it lc_offsets
   | Lescape (_, l)-> count bv l
-  | Lrebuild {lc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
-  | Lsplice {lc_offsets=(_,t)} -> Tbl.iter (fun id _ -> use_var bv id 1) t
+  | Lrebuild {lc_offsets} ->
+      let it = function
+        | Some (_, t) -> Tbl.iter (fun id _ -> use_var bv id 1) t
+        | None -> () in
+      it lc_offsets
+  | Lsplice {lc_offsets} ->
+      let it = function
+        | Some (_, t) -> Tbl.iter (fun id _ -> use_var bv id 1) t
+        | None -> () in
+      it lc_offsets
 
   and count_default bv sw = match sw.sw_failaction with
   | None -> ()

@@ -195,7 +195,7 @@ type lambda =
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
   | Lcode of lambda
-  | Lescape of int ref * lambda (* the escape: what the user writes *)
+  | Lescape of int * lambda (* the escape: what the user writes *)
   | Lrun of code_description (* "closed code term" FIXME: this might be redundant
                                 since I now have Lrebuild (below) *)
   | Lrebuild of code_description (* process escapes in a code description:
@@ -222,10 +222,7 @@ and lambda_event_kind =
 
 and code_description = { (* Information for [run] *)
   lc_code: lambda;
-  lc_clos_vars_start : int; (* offset from the start of the closure block to
-                               the beginning of the closure variables area *)
-  lc_clos_vars_count : int; (* the number of variables allocated in this closure *)
-  lc_offsets: Ident.t option * (Ident.t, int) Tbl.t;
+  lc_offsets: (Ident.t * (Ident.t, int) Tbl.t) option;
   (* The lexical environment in which to compile [lc_code]:
      maps ids to offsets in the already-allocated closure *)
   lc_marshalled_fenv : string; (* a serialized (using Marshal.to_string) copy of the fenv *)
@@ -437,12 +434,63 @@ let free_variables l =
 let free_methods l =
   free_ids (function Lsend(Self, Lvar meth, obj, _, _) -> [meth] | _ -> []) l
 
-let adjust_escape_levels n lam =
-  let rec adjust_level n = function
-      Lcode lam -> iter (adjust_level (n+1)) lam
-    | Lescape (ir, lam) -> ir := n; iter (adjust_level (n-1)) lam
-    | lam -> iter (adjust_level n) lam in
-  adjust_level n lam
+let rec adjust_escape_level n lam =
+  let adj = adjust_escape_level n in
+  let adj_opt = function
+    | Some l -> Some (adjust_escape_level n l)
+    | None -> None in
+  match lam with
+    Lvar _ as v -> v
+  | Lconst _ as c -> c
+  | Lapply(fn, args, t) ->
+      Lapply (adj fn,  List.map adj args, t)
+  | Lfunction(kind, params, body) ->
+      Lfunction(kind, params, adj body)
+  | Llet(str, id, arg, body) ->
+      Llet(str, id, adj arg, adj body)
+  | Lletrec(decl, body) ->
+      Lletrec(List.map (fun (id, exp) -> (id, adj exp)) decl,
+              adj body)
+  | Lprim(p, args) ->
+      Lprim(p, List.map adj args)
+  | Lswitch(arg, sw) ->
+      let sw_consts' = List.map (fun (key, case) -> (key, adj case)) sw.sw_consts
+      and sw_blocks' = List.map (fun (key, case) -> (key, adj case)) sw.sw_blocks in
+      Lswitch (adj arg,
+               {sw with sw_consts = sw_consts';
+                        sw_blocks = sw_blocks';
+                        sw_failaction = adj_opt sw.sw_failaction})
+  | Lstringswitch (arg,cases,default) ->
+      Lstringswitch (adj arg,
+                     List.map (fun (id, act) -> (id, adj act)) cases,
+                     adj_opt default)
+  | Lstaticraise (t,args) ->
+      Lstaticraise (t, List.map adj args)
+  | Lstaticcatch(e1, t, e2) ->
+      Lstaticcatch(adj e1, t, adj e2)
+  | Ltrywith(e1, exn, e2) ->
+      Ltrywith(adj e1, exn, adj e2)
+  | Lifthenelse(e1, e2, e3) ->
+      Lifthenelse(adj e1, adj e2, adj e3)
+  | Lsequence(e1, e2) ->
+      Lsequence (adj e1, adj e2)
+  | Lwhile(e1, e2) ->
+      Lwhile (adj e1, adj e2)
+  | Lfor(v, e1, e2, dir, e3) ->
+      Lfor (v, adj e1, adj e2, dir, adj e3)
+  | Lassign(id, e) ->
+      Lassign(id, adj e)
+  | Lsend (k, met, obj, args, t) ->
+      Lsend (k, adj met, adj obj, List.map adj args, t)
+  | Levent (lam, evt) ->
+      Levent (adj lam, evt)
+  | Lifused (v, e) ->
+      Lifused (v, adj e)
+  | Lcode e -> adjust_escape_level (n+1) e
+  | Lrun lc as r -> r
+  | Lescape (n, e) -> Lescape(n, adjust_escape_level (n-1) e)
+  | Lrebuild lc as r -> r
+  | Lsplice lc as s -> s
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0

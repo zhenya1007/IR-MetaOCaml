@@ -13,7 +13,6 @@
 CAMLprim value metaocaml_run_code(value block)
 {
   static value * run_code_function = NULL;
-  int i;
   CAMLparam1(block);
   CAMLlocal1(result);
   if (run_code_function == NULL) {
@@ -31,7 +30,6 @@ CAMLprim value metaocaml_run_code(value block)
 CAMLprim value metaocaml_proces_code(value block)
 {
   static value * process_code_function = NULL;
-  int i;
   CAMLparam1(block);
   CAMLlocal1(result);
   if (process_code_function == NULL) {

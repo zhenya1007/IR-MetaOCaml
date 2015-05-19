@@ -108,7 +108,8 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
   begin try
     Emitaux.output_channel := oc;
     Emit.begin_assembly();
-    Closure.intro size lam
+    Lambda.adjust_escape_level 0 lam
+    ++ Closure.intro size
     ++ clambda_dump_if ppf
     ++ Cmmgen.compunit size
     ++ List.iter (compile_phrase ppf) ++ (fun () -> ());

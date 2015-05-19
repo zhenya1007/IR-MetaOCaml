@@ -158,6 +158,7 @@ let rec lam ppf = function
     let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
     fprintf ppf "@[<2>(run@ %a@ (vars at: %#x))@]" one_fun uf (val_of_int (Obj.obj clos_vars))
   | Uescape _ -> failwith "Uescape printing not (yet) implemented"
+  | Urebuild _ -> failwith "Urebuild printing not (yet) implemented"
 
 and sequence ppf ulam = match ulam with
   | Usequence(l1, l2) ->

@@ -420,11 +420,7 @@ let simplify_lets lam =
         | Some (_, t) -> Tbl.iter (fun id _ -> use_var bv id 1) t
         | None -> () in
       it lc_offsets
-  | Lsplice {lc_offsets} ->
-      let it = function
-        | Some (_, t) -> Tbl.iter (fun id _ -> use_var bv id 1) t
-        | None -> () in
-      it lc_offsets
+  | Lsplice n -> ()
 
   and count_default bv sw = match sw.sw_failaction with
   | None -> ()

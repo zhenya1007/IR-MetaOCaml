@@ -56,6 +56,7 @@ type ulambda =
   | Ucode of ucode_description
   | Urun of ufunction * Obj.t
   | Uescape of ulambda
+  | Usplice of int
   | Urebuild of ucode_description * (code_description * int) list
 
 and ufunction = {
@@ -75,7 +76,7 @@ and ulambda_switch =
 
 and ucode_description = {
   uc_code: lambda;
-  uc_contains_escape : bool;
+  uc_splices : ulambda array;
   uc_function: ufunction;
   uc_cvars: ulambda list;
   uc_offsets: (Ident.t * (Ident.t, int) Tbl.t) option;

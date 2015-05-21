@@ -208,7 +208,7 @@ type lambda =
   | Lrun of code_description (* produced by calling [run_code] *)
   | Lrebuild of code_description (* process escapes in a code description:
                                     the escapes are marked with Lsplice (below) *)
-  | Lsplice of code_description (* what escape turns into, after it's been through
+  | Lsplice of int (* what escape turns into, after it's been through
                                    the compiler once*)
 
 and lambda_switch =

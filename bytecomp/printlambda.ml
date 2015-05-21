@@ -390,8 +390,8 @@ let rec lam ppf = function
       fprintf ppf "@[<2>(escape:@ %a)@]" lam expr
   | Lrebuild {lc_code=expr; _} ->
       fprintf ppf "@[<2>(rebuild:@ %a)@]" lam expr
-  | Lsplice {lc_code=expr; _} ->
-      fprintf ppf "@[<2>(splice:@ %a)@]" lam expr
+  | Lsplice n ->
+      fprintf ppf "@[<2>(splice:@ %d)@]" n
 
 and sequence ppf = function
   | Lsequence(l1, l2) ->

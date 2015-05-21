@@ -200,7 +200,7 @@ type lambda =
                                 since I now have Lrebuild (below) *)
   | Lrebuild of code_description (* process escapes in a code description:
                                     the escapes are marked with Lsplice (below) *)
-  | Lsplice of code_description (* what escape turns into, after it's been through
+  | Lsplice of int (* what escape turns into, after it's been through
                                    the compiler once*)
 
 and lambda_switch =
@@ -391,8 +391,7 @@ let iter f = function
   | Lrun {lc_code; _} -> f lc_code
   | Lescape (_, e) -> f e
   | Lrebuild {lc_code; _} -> f lc_code
-  | Lsplice {lc_code; _} -> f lc_code
-
+  | Lsplice _ -> ()
 
 
 module IdentSet =

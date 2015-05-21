@@ -159,6 +159,7 @@ let rec lam ppf = function
     fprintf ppf "@[<2>(run@ %a@ (vars at: %#x))@]" one_fun uf (val_of_int (Obj.obj clos_vars))
   | Uescape _ -> failwith "Uescape printing not (yet) implemented"
   | Urebuild _ -> failwith "Urebuild printing not (yet) implemented"
+  | Usplice _ -> failwith "Usplice printing not (yet) implemented"
 
 and sequence ppf ulam = match ulam with
   | Usequence(l1, l2) ->

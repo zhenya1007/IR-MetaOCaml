@@ -104,6 +104,7 @@ let occurs_var var u =
     | Urun _ -> false
     | Uescape _ -> false
     | Urebuild _ -> false
+    | Usplice _ -> false
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do
@@ -248,7 +249,7 @@ let lambda_smaller lam threshold =
     | Usend(_, met, obj, args, _) ->
         size := !size + 8;
         lambda_size met; lambda_size obj; lambda_list_size args
-    | Ucode _ | Urun _ | Uescape _ | Urebuild _
+    | Ucode _ | Urun _ | Uescape _ | Urebuild _ | Usplice _
       -> raise Exit (* Copied from [Uclosure] case *)
   and lambda_list_size l = List.iter lambda_size l
   and lambda_array_size a = Array.iter lambda_size a in
@@ -647,6 +648,7 @@ let rec substitute fpc sb ulam =
   | Urun _ as r -> r
   | Uescape _ as e -> e
   | Urebuild _ as r -> r
+  | Usplice _ as s -> s
 
 (* Perform an inline expansion *)
 
@@ -1074,9 +1076,135 @@ let rec close fenv cenv = function
       let cenv_fv = (function | [cenv] -> cenv
                               | _ -> fatal_error "Closure.close(cenv_fv)")
           !cenv_fv_ref in
-      let contains_escape = ref false in
-      Lambda.iter (function Lescape _ -> contains_escape := true | _ -> ()) body;
-      (Ucode {uc_code=body; uc_contains_escape = !contains_escape;
+
+      let collect_escapes l =
+        let f_opt f (l, a) = function
+          | None -> (None, a)
+          | Some e -> let (l', a') = f (l , a) e in (Some l', a')  in
+        let rec f (l, a) = function
+          | Lvar _ as l -> (l, a)
+          | Lconst _ as l -> (l, a)
+          | Lapply(fn, args, t) ->
+              let (fn', a1) = f (l, a) fn in
+              let (args', a2) = List.fold_right
+                  (fun arg (args, a) ->
+                     let (arg', a') = f (l, a) arg in
+                     (arg'::args, a')) args ([], a1) in
+              (Lapply(fn', args', t), a2)
+          | Lfunction(kind, params, body) ->
+              let (body', a') = f (l, a) body in
+              (Lfunction(kind, params, body'), a')
+          | Llet(str, id, arg, body) ->
+              let (arg', a1) = f (l, a) arg in
+              let (body', a2) = f (l, a1) body in
+              (Llet(str, id, arg', body'), a2)
+          | Lletrec(decl, body) ->
+              let (body', a1) = f (l, a) body in
+              let (decl', a2) = List.fold_right
+                  (fun (id, exp) (decl, a) ->
+                     let (exp', a') = f (l, a) exp in
+                     ((id,exp)::decl, a')) decl ([], a1) in
+              (Lletrec(decl', body'), a2)
+          | Lprim(p, args) ->
+              let (args', a') = List.fold_right
+                  (fun arg (args, a) ->
+                     let (arg', a') = f (l, a) arg in
+                     (arg::args, a')) args ([], a) in
+              (Lprim(p, args'), a')
+          | Lswitch(arg, sw) ->
+              let (arg', a1) = f (l, a) arg in
+              let (sw_consts', a2) = List.fold_right
+                  (fun (key, case) (sw_consts, a) ->
+                     let (case', a') = f (l, a) case in
+                     ((key, case')::sw_consts, a')) sw.sw_consts ([], a1) in
+              let (sw_blocks', a3) = List.fold_right
+                  (fun (key, case) (sw_blocks,a) ->
+                     let (case', a') = f (l, a) case in
+                     ((key, case')::sw_blocks, a')) sw.sw_blocks ([], a2)  in
+              (*let (sw_failaction', a4) = f_opt f (l, a3) sw.sw_failaction in*)
+              (Lswitch(arg', {sw with sw_consts = sw_consts';
+                                     sw_blocks = sw_blocks';})
+                        (* sw_failaction = sw_failaction';}*),
+               a3)
+          | Lstringswitch (arg,cases,default) ->
+              let (arg', a1) = f (l, a) arg in
+              let (cases', a2) = List.fold_right
+                  (fun (t,act) (cases, a) ->
+                     let (act', a') = f (l, a) act in
+                     ((t,act')::cases, a')) cases ([], a1) in
+              let (default', a3) = f_opt f (l, a2) default in
+              (Lstringswitch (arg', cases', default'), a3)
+          | Lstaticraise (t,args) ->
+              let (args', a') = List.fold_right
+                  (fun arg (args, a) ->
+                     let (arg', a') = f (l, a) arg in
+                     (arg'::args, a')) args ([], a) in
+              (Lstaticraise(t, args'), a')
+          | Lstaticcatch(e1, xs, e2) ->
+              let (e1', a1) = f (l, a) e1 in
+              let (e2', a2) = f (l, a1) e2 in
+              (Lstaticcatch(e1', xs, e2'), a2)
+          | Ltrywith(e1, exn, e2) ->
+              let (e1', a1) = f (l, a) e1 in
+              let (e2', a2) = f (l, a1) e2 in
+              (Ltrywith(e1', exn, e2'), a2)
+          | Lifthenelse(e1, e2, e3) as l ->
+              let (e1', a1) = f (l, a) e1 in
+              let (e2', a2) = f (l, a1) e2 in
+              let (e3', a3) = f (l, a2) e3 in
+              (Lifthenelse(e1', e2', e3'), a3)
+          | Lsequence(e1, e2) ->
+              let (e1', a1) = f (l, a) e1 in
+              let (e2', a2) = f (l, a1) e2 in
+              (Lsequence(e1', e2'), a2)
+          | Lwhile(e1, e2) ->
+              let (e1', a1) = f (l, a) e1 in
+              let (e2', a2) = f (l, a1) e2 in
+              (Lwhile(e1', e2'), a2)
+          | Lfor(v, e1, e2, dir, e3) as l ->
+              let (e1', a1) = f (l, a) e1 in
+              let (e2', a2) = f (l, a1) e2 in
+              let (e3', a3) = f (l, a2) e3 in
+              (Lfor(v, e1', e2', dir, e3'), a3)
+          | Lassign(id, e) as l ->
+              let (e', a') = f (l, a) e in
+              (Lassign(id, e'), a')
+          | Lsend (k, met, obj, args, t) ->
+              let r = function
+                | (met'::obj'::args', a') -> (Lsend (k, met', obj', args', t), a')
+                | _ -> failwith "Closure.close(Lcode/Lsend)" in
+              r (List.fold_right
+                   (fun lam (lst, a) ->
+                      let (lam', a') = f (l, a) lam in
+                      (lam'::lst, a')) (met::obj::args) ([], a))
+          | Levent (lam, evt) ->
+              let (lam', a') = f (l, a) lam in
+              (Levent(lam', evt), a')
+          | Lifused (v, e) ->
+              let (e', a') = f (l, a) e in
+              (Lifused (v, e'), a')
+          | Lcode e ->
+              let (e', a') = f (l, a) e in
+              (Lcode e', a')
+          | Lrun ({lc_code; _} as lc) ->
+              let (lc_code', a') = f (l, a) lc_code in
+              (Lrun {lc with lc_code = lc_code';}, a')
+          | Lescape (n, e)  ->
+              let (e', a') = f (l, a) e in
+              if n = 1 then
+                let a'' = e'::a' in
+                (Lsplice(List.length a''), a'')
+              else
+                (Lescape(n, e'), a')
+          | Lrebuild ({lc_code; _} as lc) ->
+              let (lc_code', a') = f (l, a) lc_code in
+              (Lrebuild {lc with lc_code = lc_code';}, a')
+          | Lsplice _ -> failwith "Clambda.close(Lcode/Lsplice)" in
+        f (Lambda.lambda_unit, []) l in
+      let (body', splices) = collect_escapes body in
+      let (usplices, _) = List.rev splices |> List.map (close fenv cenv)
+                          |> List.split in
+      (Ucode {uc_code=body'; uc_splices = Array.of_list usplices;
               uc_function=ufunct; uc_cvars=args;
               uc_offsets = offsets_of_closure_env cenv_fv;
               (* no need to get [fenv_rec] out of [close_functions] ([close_one_function])
@@ -1100,10 +1228,7 @@ let rec close fenv cenv = function
                       | _ -> fatal_error "Closure.close(Lrun)")
             clos in
     (Urun (f, lc_block), Value_unknown)
-  | Lescape (n, lam) ->
-      match n with
-        1 -> (Usplice (close fenv cenv lam), Value_unknown)
-      | _ -> (Uescape (close fenv cenv lam), Value_unknown)
+  | Lescape (n, lam) -> ((Usplice ~-1), Value_unknown)
   | Lrebuild {lc_code; lc_offsets; lc_marshalled_fenv; lc_block} ->
       let fenv' = (Marshal.from_string lc_marshalled_fenv 0
                  : (Ident.t, value_approximation) Tbl.t) in

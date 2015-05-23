@@ -236,12 +236,11 @@ and code_description = { (* Information for [run] *)
   lc_marshalled_fenv : string; (* a serialized (using Marshal.to_string) copy of the fenv *)
   lc_block : Obj.t;
   (* The pointer to the allocated closure that holds the values
-     of the free variables *)}
-
-(* adjust_escape_level n t ->
-   Adjust levels in Lescape for sub-terms of term [t] on the assumption
-   that [t] itself is at level [n]. *)
-val adjust_escape_level: int -> lambda -> lambda
+     of the free variables *)
+  lc_splices_count : int;
+  (* don't strictly need this, but it does make unmarshalling splices simpler *)
+  lc_splices : code_description list;
+  (* The array of splices for this piece of code (if any)*)}
 
 (* Sharing key *)
 val make_key: lambda -> lambda option

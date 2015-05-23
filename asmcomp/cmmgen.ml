@@ -1372,51 +1372,37 @@ let rec transl = function
       end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
-  | Ucode{uc_code; uc_function; uc_cvars; uc_offsets; uc_marshalled_fenv} ->
+  | Ucode{uc_code; uc_splices; uc_function; uc_cvars; uc_offsets; uc_marshalled_fenv} ->
     let lc = {Lambda.lc_code=uc_code;
               lc_offsets=uc_offsets;
               lc_marshalled_fenv = uc_marshalled_fenv;
-              lc_block=Obj.repr []} in
+              lc_block=Obj.repr [];
+              lc_splices_count = List.length uc_splices;
+              lc_splices = []} in
     let s = Marshal.to_string lc [] in
     let b =  Uconst_string s in
     (* unfolding transl_structured_constant *)
     let lbl = Compilenv.new_structured_constant b ~shared:false in
     (* essentially copied from the Uclosure case, and modified *)
-        let sz = fundecls_size [uc_function] in
-    let block_size = sz + List.length uc_cvars + 1 in
+    let sz = fundecls_size [uc_function] in
+    let block_size = sz + List.length uc_cvars + List.length uc_splices + 1 in
     let header = alloc_closure_header block_size in
     let heap_block =
       header ::
       Cconst_symbol uc_function.label
       :: int_const 1
-      :: (List.map transl uc_cvars) @ [Cconst_symbol lbl]
-    in
-    let sanity_check () =
-      if sz <> 2 then fatal_error "Unexpected size of heap block";
-      match uc_offsets with
-      | Some(e, _) ->
-          begin match uc_function.Clambda.params with
-          | [_; e'] -> if not (Ident.equal e e')
-              then fatal_error "Cmmgen.transl(Ucode): env_param mismatch"
-          | [_] -> ()
-          | _ -> fatal_error "Cmmgen.transl(Ucode): invalid parameters list"
-          end
-      | None ->
-          begin match uc_function.Clambda.params with
-          | [_] -> ()
-          | _ -> fatal_error ("Cmmgen.transl(Ucode): env_param in function_description"
-                              ^ " but not in offsets")
-          end
-    in
-    sanity_check ();
+      :: (List.map transl uc_cvars)
+      @ (List.map transl uc_splices) @ [Cconst_symbol lbl] in
     Queue.add uc_function functions;
     Cop(Calloc, heap_block)
-  | Urebuild ({uc_code; uc_contains_escape; uc_function; uc_cvars;
+  | Urebuild ({uc_code; uc_splices; uc_function; uc_cvars;
                uc_offsets; uc_marshalled_fenv}, splices_info) ->
     let lc = {Lambda.lc_code=uc_code;
               lc_offsets=uc_offsets;
               lc_marshalled_fenv = uc_marshalled_fenv;
-              lc_block=Obj.repr []} in
+              lc_block=Obj.repr [];
+              lc_splices_count = List.length uc_splices;
+              lc_splices = List.map Closure.code_description_of_ucode uc_splices} in
     let s = Marshal.to_string lc [] in
     let b =  Uconst_string s in
     (* unfolding transl_structured_constant *)
@@ -1448,7 +1434,6 @@ let rec transl = function
       :: (List.map transl uc_cvars)
         @ List.flatten (List.map (fun (sp, _) -> closure_vars_of sp) splices_info)
         @ [Cconst_symbol lbl] in
-    Queue.add uc_function functions;
     Cop(Calloc, heap_block)
   | Urun(uf, block) ->
       let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
@@ -1456,7 +1441,8 @@ let rec transl = function
       bind "run" (transl clos) (fun clos ->
           Cop(Capply(typ_addr, Debuginfo.none),
               [get_field clos 0; Cconst_int 0; Cconst_pointer (val_of_int (Obj.obj block))]))
-  | Uescape _ -> failwith "Uescape not (yte) implemented"
+  | Uescape _ -> failwith "Uescape not (yet) implemented"
+  | Usplice _ -> failwith "Usplice seen outside of a .<code>. block"
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->

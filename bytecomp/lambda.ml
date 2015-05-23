@@ -228,7 +228,11 @@ and code_description = { (* Information for [run] *)
   lc_marshalled_fenv : string; (* a serialized (using Marshal.to_string) copy of the fenv *)
   lc_block : Obj.t;
   (* The pointer to the allocated closure that holds the values
-     of the free variables *)}
+     of the free variables *)
+  lc_splices_count : int;
+  (* don't strictly need this, but it does make unmarshaling splices easier *)
+  lc_splices : code_description list;
+  (* The array of splices for this piece of code (if any)*)}
 
 let const_unit = Const_pointer 0
 
@@ -432,64 +436,6 @@ let free_variables l =
 
 let free_methods l =
   free_ids (function Lsend(Self, Lvar meth, obj, _, _) -> [meth] | _ -> []) l
-
-let rec adjust_escape_level n lam =
-  let adj = adjust_escape_level n in
-  let adj_opt = function
-    | Some l -> Some (adjust_escape_level n l)
-    | None -> None in
-  match lam with
-    Lvar _ as v -> v
-  | Lconst _ as c -> c
-  | Lapply(fn, args, t) ->
-      Lapply (adj fn,  List.map adj args, t)
-  | Lfunction(kind, params, body) ->
-      Lfunction(kind, params, adj body)
-  | Llet(str, id, arg, body) ->
-      Llet(str, id, adj arg, adj body)
-  | Lletrec(decl, body) ->
-      Lletrec(List.map (fun (id, exp) -> (id, adj exp)) decl,
-              adj body)
-  | Lprim(p, args) ->
-      Lprim(p, List.map adj args)
-  | Lswitch(arg, sw) ->
-      let sw_consts' = List.map (fun (key, case) -> (key, adj case)) sw.sw_consts
-      and sw_blocks' = List.map (fun (key, case) -> (key, adj case)) sw.sw_blocks in
-      Lswitch (adj arg,
-               {sw with sw_consts = sw_consts';
-                        sw_blocks = sw_blocks';
-                        sw_failaction = adj_opt sw.sw_failaction})
-  | Lstringswitch (arg,cases,default) ->
-      Lstringswitch (adj arg,
-                     List.map (fun (id, act) -> (id, adj act)) cases,
-                     adj_opt default)
-  | Lstaticraise (t,args) ->
-      Lstaticraise (t, List.map adj args)
-  | Lstaticcatch(e1, t, e2) ->
-      Lstaticcatch(adj e1, t, adj e2)
-  | Ltrywith(e1, exn, e2) ->
-      Ltrywith(adj e1, exn, adj e2)
-  | Lifthenelse(e1, e2, e3) ->
-      Lifthenelse(adj e1, adj e2, adj e3)
-  | Lsequence(e1, e2) ->
-      Lsequence (adj e1, adj e2)
-  | Lwhile(e1, e2) ->
-      Lwhile (adj e1, adj e2)
-  | Lfor(v, e1, e2, dir, e3) ->
-      Lfor (v, adj e1, adj e2, dir, adj e3)
-  | Lassign(id, e) ->
-      Lassign(id, adj e)
-  | Lsend (k, met, obj, args, t) ->
-      Lsend (k, adj met, adj obj, List.map adj args, t)
-  | Levent (lam, evt) ->
-      Levent (adj lam, evt)
-  | Lifused (v, e) ->
-      Lifused (v, adj e)
-  | Lcode e -> adjust_escape_level (n+1) e
-  | Lrun lc as r -> r
-  | Lescape (n, e) -> Lescape(n, adjust_escape_level (n-1) e)
-  | Lrebuild lc as r -> r
-  | Lsplice lc as s -> s
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0

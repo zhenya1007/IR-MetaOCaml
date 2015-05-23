@@ -386,10 +386,13 @@ let rec lam ppf = function
     fprintf ppf "@[<2>(code:@ %a)@]" lam expr
   | Lrun {lc_code=expr; _} ->
       fprintf ppf "@[<2>(ucode:@ %a)@]" lam expr
-  | Lescape (_, expr) ->
-      fprintf ppf "@[<2>(escape:@ %a)@]" lam expr
-  | Lrebuild {lc_code=expr; _} ->
-      fprintf ppf "@[<2>(rebuild:@ %a)@]" lam expr
+  | Lescape (n, expr) ->
+      fprintf ppf "@[<2>(escape(%d):@ %a)@]" n lam expr
+  | Lrebuild {lc_code; lc_splices; _} ->
+      let splices ppf =
+        List.iter (fun {lc_code;_} -> fprintf ppf "%a" lam lc_code) in
+      fprintf ppf "@[<2>(rebuild:@ %a)@ @[splices: %a@]@]"
+        lam lc_code splices lc_splices
   | Lsplice n ->
       fprintf ppf "@[<2>(splice:@ %d)@]" n
 

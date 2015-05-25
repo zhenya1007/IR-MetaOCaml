@@ -1,7 +1,7 @@
 let run_code block =
   let s = Obj.obj (Obj.field block (Obj.size block - 1)) in
   let lc = (Marshal.from_string s 0 : Lambda.code_description) in
-  let lc' = {lc with Lambda.lc_block = block} in
+  let lc' = {lc with Lambda.lc_block = Some block} in
   (* any splices should have been already processed by rebuild *)
   if lc.Lambda.lc_splices_count <> 0 then failwith "metaocaml_native(run_code_block)";
   match Opttoploop.load_lambda Format.std_formatter (0, Lambda.Lrun lc') with
@@ -29,7 +29,7 @@ and update_lc lc block =
       let lc' = code_description_of_block (last_field block (n+2)) in
       loop (n+1) (lc'::lst)
   in
-  {lc with Lambda.lc_block = block;
+  {lc with Lambda.lc_block = Some block;
            lc_splices = loop 0 []}
 
 let process_code block =

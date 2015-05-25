@@ -226,9 +226,11 @@ and code_description = { (* Information for [run] *)
   (* The lexical environment in which to compile [lc_code]:
      maps ids to offsets in the already-allocated closure *)
   lc_marshalled_fenv : string; (* a serialized (using Marshal.to_string) copy of the fenv *)
-  lc_block : Obj.t;
+  lc_block : Obj.t option;
   (* The pointer to the allocated closure that holds the values
      of the free variables *)
+  lc_cvars_count : int;
+  (*The number of "closed over" values stored in this closure *)
   lc_splices_count : int;
   (* don't strictly need this, but it does make unmarshaling splices easier *)
   lc_splices : code_description list;

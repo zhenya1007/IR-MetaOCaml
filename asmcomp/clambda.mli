@@ -57,7 +57,7 @@ type ulambda =
   | Urun of ufunction * Obj.t
   | Uescape of ulambda
   | Usplice of int
-  | Urebuild of ucode_description * (code_description * int) list
+  | Urebuild of ucode_description * ulambda list
 
 and ufunction = {
   label  : function_label;
@@ -74,13 +74,13 @@ and ulambda_switch =
     us_index_blocks: int array;
     us_actions_blocks: ulambda array}
 
-and ucode_description = {
-  uc_code: lambda;
-  uc_splices : ulambda list;
-  uc_function: ufunction;
-  uc_cvars: ulambda list;
-  uc_offsets: (Ident.t * (Ident.t, int) Tbl.t) option;
-  uc_marshalled_fenv: string;}
+and ucode_description =
+  { uc_code: lambda;
+    uc_splices : ulambda list;
+    uc_function: ufunction;
+    uc_cvars: ulambda list;
+    uc_offsets: (Ident.t * (Ident.t, int) Tbl.t) option;
+    uc_marshalled_fenv: string;}
 
 (* Description of known functions *)
 

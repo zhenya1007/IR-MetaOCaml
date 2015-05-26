@@ -57,7 +57,7 @@ type ulambda =
   | Urun of ufunction * Obj.t
   | Uescape of ulambda
   | Usplice of int
-  | Urebuild of ucode_description * (code_description * int) list
+  | Urebuild of ucode_description * ulambda list
 
 and ufunction = {
   label  : function_label;

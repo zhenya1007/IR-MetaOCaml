@@ -1377,7 +1377,6 @@ let rec transl = function
                 lc_offsets=uc_offsets;
                 lc_marshalled_fenv = uc_marshalled_fenv;
                 lc_block=None;
-                lc_cvars_count = List.length uc_cvars;
                 lc_splices_count = List.length uc_splices;
                 lc_splices = []} in
       let s = Marshal.to_string lc [] in
@@ -1397,7 +1396,7 @@ let rec transl = function
       Queue.add uc_function functions;
       Cop(Calloc, heap_block)
   | Urebuild ({uc_code; uc_splices; uc_function; uc_cvars;
-               uc_offsets; uc_marshalled_fenv}, splices_info) ->
+               uc_offsets; uc_marshalled_fenv}, splice_vars) ->
       let rec code_description_of_ucode = function
         | Ucode {uc_code; uc_splices; uc_function;
                  uc_cvars; uc_offsets; uc_marshalled_fenv;} ->
@@ -1405,7 +1404,6 @@ let rec transl = function
              lc_offsets = uc_offsets;
              lc_marshalled_fenv = uc_marshalled_fenv;
              lc_block = None;
-             lc_cvars_count = List.length uc_cvars;
              lc_splices_count = List.length uc_splices;
              lc_splices = List.map code_description_of_ucode uc_splices;}
         | _ -> failwith "Cmmgen.transl(Urebuild/code_description_of_ucode)" in
@@ -1413,7 +1411,6 @@ let rec transl = function
                 lc_offsets=uc_offsets;
                 lc_marshalled_fenv = uc_marshalled_fenv;
                 lc_block= None;
-                lc_cvars_count = List.length uc_cvars;
                 lc_splices_count = List.length uc_splices;
                 lc_splices = List.map code_description_of_ucode uc_splices} in
       let s = Marshal.to_string lc [] in
@@ -1422,32 +1419,14 @@ let rec transl = function
       let lbl = Compilenv.new_structured_constant b ~shared:false in
       (* essentially copied from the Uclosure case, and modified *)
       let sz = fundecls_size [uc_function] in
-      let ids_cnt = let r = ref 0 in match uc_offsets with
-        | Some(_, offsets) -> Tbl.iter (fun _ _ -> incr r) offsets; !r
-        | None -> !r in
-      let block_size = sz + List.length uc_cvars + ids_cnt + 1 in
+      let block_size = sz + List.length uc_cvars + List.length splice_vars + 1 in
       let header = alloc_closure_header block_size in
-      let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
-      let closure_vars_of {lc_offsets; lc_block; _} =
-        let pointer_of_block = function
-          | Some b -> Cconst_pointer (val_of_int (Obj.obj b))
-          | None -> failwith "Null pointer" in
-        match lc_offsets with
-        | Some(_, offsets) ->
-            let lst = Tbl.fold
-                (fun _ pos lst ->
-                   (pos, (get_field (pointer_of_block lc_block) pos))::lst)
-                offsets [] in
-            let ls = List.sort (fun (p1, _) (p2, _) -> compare p1 p2) lst in
-            let (_, ls') = List.split ls in
-            ls'
-        | None -> [] in
       let heap_block =
         header ::
         Cconst_symbol uc_function.label
         :: int_const 1
         :: (List.map transl uc_cvars)
-        @ List.flatten (List.map (fun (sp, _) -> closure_vars_of sp) splices_info)
+        @ (List.map transl splice_vars)
         @ [Cconst_symbol lbl] in
       Queue.add uc_function functions;
       Cop(Calloc, heap_block)

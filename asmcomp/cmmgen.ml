@@ -21,6 +21,7 @@ open Lambda
 open Clambda
 open Cmm
 open Cmx_format
+open Format
 
 (* Local binding of complex expressions *)
 
@@ -1394,6 +1395,8 @@ let rec transl = function
         :: (List.map transl uc_cvars)
         @ (List.map transl uc_splices) @ [Cconst_symbol lbl] in
       Queue.add uc_function functions;
+      if !Clflags.dump_rawlambda then
+        eprintf "@[Cmmgen.transl(Ucode): before Calloc@]@.";
       Cop(Calloc, heap_block)
   | Urebuild ({uc_code; uc_splices; uc_function; uc_cvars;
                uc_offsets; uc_marshalled_fenv}, splice_vars) ->
@@ -1406,7 +1409,12 @@ let rec transl = function
              lc_block = None;
              lc_splices_count = List.length uc_splices;
              lc_splices = List.map code_description_of_ucode uc_splices;}
-        | _ -> failwith "Cmmgen.transl(Urebuild/code_description_of_ucode)" in
+        | ulam ->
+            if !Clflags.dump_rawlambda then
+              eprintf "@[%a@]@." Printclambda.clambda ulam;
+            failwith "Cmmgen.transl(Urebuild/code_description_of_ucode)" in
+      if !Clflags.dump_rawlambda then
+        eprintf "@[Cmmgen.transl(Urebuild)@]@.";
       let lc = {Lambda.lc_code=uc_code;
                 lc_offsets=uc_offsets;
                 lc_marshalled_fenv = uc_marshalled_fenv;

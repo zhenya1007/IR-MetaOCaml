@@ -1238,10 +1238,7 @@ let rec close fenv cenv = function
                             [fenv] only the [Value_closure]... entries for function(s)
                             that are bound by the [let rec] that is being closure-converted *)
                          uc_marshalled_fenv = Marshal.to_string fenv []} in
-      (* if 0 < List.length usplices then *)
         (Uprim(Prebuild, [ucode], Debuginfo.none), Value_unknown)
-      (* else *)
-      (*   (ucode, Value_unknown) *)
   | Lrun {lc_code; lc_offsets; lc_marshalled_fenv; lc_block} ->
       let pr_tbl ppf tbl =
         let pr_field ppf n =
@@ -1313,9 +1310,8 @@ let rec close fenv cenv = function
         eprintf "@[Closure.close(Lrebuild):@ lc_block:@ %a@]@." pr_blk lc_block;
       let fenv' = (Marshal.from_string lc_marshalled_fenv 0
                    : (Ident.t, value_approximation) Tbl.t) in
-      let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
       let pointer_of_block = function
-        | Some b -> Uconst(Uconst_ptr (val_of_int (Obj.obj b)))
+        | Some b -> Uconst(Uconst_ptr (Obj.obj b))
         | None -> failwith "Closure.close(copy_cvars_from_splices): Null pointer" in
       let uc_cvars_of_offsets offsets =
         let ulam_of_approx = function
@@ -1473,7 +1469,7 @@ let rec close fenv cenv = function
       if 0 < List.length usplices then
         (Uprim(Prebuild, [urebuild], Debuginfo.none), Value_unknown)
       else
-        (urebuild, Value_unknown)
+        (Ucode ucd, Value_unknown)
   | Lsplice n -> (Usplice n, Value_unknown)
 
 and close_list fenv cenv = function

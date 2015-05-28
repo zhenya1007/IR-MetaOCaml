@@ -1400,19 +1400,6 @@ let rec transl = function
       Cop(Calloc, heap_block)
   | Urebuild ({uc_code; uc_splices; uc_function; uc_cvars;
                uc_offsets; uc_marshalled_fenv}, splice_vars) ->
-      let rec code_description_of_ucode = function
-        | Ucode {uc_code; uc_splices; uc_function;
-                 uc_cvars; uc_offsets; uc_marshalled_fenv;} ->
-            {Lambda.lc_code=uc_code;
-             lc_offsets = uc_offsets;
-             lc_marshalled_fenv = uc_marshalled_fenv;
-             lc_block = None;
-             lc_splices_count = List.length uc_splices;
-             lc_splices = List.map code_description_of_ucode uc_splices;}
-        | ulam ->
-            if !Clflags.dump_rawlambda then
-              eprintf "@[%a@]@." Printclambda.clambda ulam;
-            failwith "Cmmgen.transl(Urebuild/code_description_of_ucode)" in
       if !Clflags.dump_rawlambda then
         eprintf "@[Cmmgen.transl(Urebuild)@]@.";
       let lc = {Lambda.lc_code=uc_code;
@@ -1420,14 +1407,18 @@ let rec transl = function
                 lc_marshalled_fenv = uc_marshalled_fenv;
                 lc_block= None;
                 lc_splices_count = List.length uc_splices;
-                lc_splices = List.map code_description_of_ucode uc_splices} in
+                lc_splices = []} in
       let s = Marshal.to_string lc [] in
       let b =  Uconst_string s in
       (* unfolding transl_structured_constant *)
       let lbl = Compilenv.new_structured_constant b ~shared:false in
       (* essentially copied from the Uclosure case, and modified *)
       let sz = fundecls_size [uc_function] in
-      let block_size = sz + List.length uc_cvars + List.length splice_vars + 1 in
+      let block_size = sz
+                       + List.length uc_cvars
+                       + List.length splice_vars
+                       + List.length uc_splices
+                       + 1 in
       let header = alloc_closure_header block_size in
       let heap_block =
         header ::
@@ -1435,6 +1426,7 @@ let rec transl = function
         :: int_const 1
         :: (List.map transl uc_cvars)
         @ (List.map transl splice_vars)
+        @ (List.map transl uc_splices)
         @ [Cconst_symbol lbl] in
       Queue.add uc_function functions;
       Cop(Calloc, heap_block)

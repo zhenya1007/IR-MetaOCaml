@@ -390,7 +390,7 @@ let rec lam ppf = function
       fprintf ppf "@[<2>(escape(%d):@ %a)@]" n lam expr
   | Lrebuild {lc_code; lc_splices; _} ->
       let splices ppf =
-        List.iter (fun {lc_code;_} -> fprintf ppf "%a" lam lc_code) in
+        List.iter (fun {lc_code;_} -> fprintf ppf "%a@," lam lc_code) in
       fprintf ppf "@[<2>(rebuild:@ %a)@ @[splices: %a@]@]"
         lam lc_code splices lc_splices
   | Lsplice n ->

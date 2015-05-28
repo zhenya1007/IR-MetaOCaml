@@ -1258,13 +1258,12 @@ let rec close fenv cenv = function
         fprintf ppf "@[%a@]@." pr tbl in
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lrun):@ lc_offsets@ %a@]@." pr_tbl lc_offsets;
-
       let cenv' = match lc_offsets with
         | Some (env_param, offsets) ->
             Tbl.fold (fun id pos cenv ->
                 Tbl.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none)) cenv)
-              offsets cenv
-        | None -> cenv in
+              offsets Tbl.empty
+        | None -> Tbl.empty in
       let fenv' = (Marshal.from_string lc_marshalled_fenv 0
                    : (Ident.t, value_approximation) Tbl.t) in
       if !Clflags.dump_rawlambda then
@@ -1292,7 +1291,7 @@ let rec close fenv cenv = function
           Tbl.iter (fun id pos -> fprintf ppf "%a: %d %a;@;"
                        Ident.print id pos pr_field pos) tbl in
         match tbl with
-        | Some (_, tbl) -> fprintf ppf "@[%a@]@." pr tbl
+        | Some (id, tbl) -> fprintf ppf "@[%a:: %a@]@." Ident.print id pr tbl
         | None -> () in
       let pr_lc ppf = List.iter (fun {lc_code;_} ->
           fprintf ppf "%a;@;" Printlambda.lambda lc_code) in
@@ -1312,7 +1311,7 @@ let rec close fenv cenv = function
                    : (Ident.t, value_approximation) Tbl.t) in
       let pointer_of_block = function
         | Some b -> Uconst(Uconst_ptr (Obj.obj b))
-        | None -> failwith "Closure.close(copy_cvars_from_splices): Null pointer" in
+        | None -> failwith "Closure.close(pointer_of_block): Null pointer" in
       let uc_cvars_of_offsets offsets =
         let ulam_of_approx = function
           | Value_const c -> Some (Uconst c)
@@ -1342,8 +1341,8 @@ let rec close fenv cenv = function
         | Some (env_param, offsets) ->
             Tbl.fold (fun id pos cenv ->
                 Tbl.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none)) cenv)
-              offsets cenv
-        | None -> cenv in
+              offsets Tbl.empty
+        | None -> Tbl.empty in
       let splice_in_code lam =
         let f_opt f = function
           | None -> None
@@ -1431,7 +1430,7 @@ let rec close fenv cenv = function
             match lc_offsets with
             | Some (_, offsets) ->
                 let (cenv', pos', lst') = copy_vars lc_block cenv pos offsets in
-                (cenv, pos, lst @ lst')
+                (cenv', pos', lst @ lst')
             | None -> (cenv, pos, lst))
           (cenv, pos, []) splices in
       let pos = match lc_offsets with
@@ -1447,8 +1446,23 @@ let rec close fenv cenv = function
         | None -> (None, pos, []) in
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lrebuild)@ copy_instr: %a@]@." pr_instr copy_instr;
+      if !Clflags.dump_rawlambda then
+        eprintf "@[Closure.close(Lrebuild)@ lc_offsets': %a@]@." pr_tbl lc_offsets';
       let (body', splices) = collect_splices body in
-      let (usplices, _) = List.map (close fenv' cenv') splices |> List.split in
+      let (usplices, _) =
+        List.map (close fenv' cenv') splices
+        |> List.map
+          (fun (sp, approx) -> match lc_offsets with
+             | Some (ep, _) ->
+                 let sb = Tbl.add ep (pointer_of_block lc_block) Tbl.empty in
+                 (substitute !Clflags.float_const_prop sb sp, approx)
+             | None -> (sp, approx))
+        |> List.split in
+      if !Clflags.dump_rawlambda then
+        eprintf "@[Closure.close(Lrebuild)@ usplices: %a@]@."
+          (fun ppf usplices -> List.iter (fun sp ->
+               fprintf ppf "%a@ " Printclambda.clambda sp) usplices)
+          usplices;
       let dummy = Lfunction (Curried, [Ident.create "dummy"], lambda_unit) in
       let (udummy, _) =
         (function | (Uclosure([ufunct], args), _) -> (ufunct, args)

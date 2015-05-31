@@ -390,7 +390,7 @@ let rec lam ppf = function
       fprintf ppf "@[<2>(escape(%d):@ %a)@]" n lam expr
   | Lrebuild {lc_code; lc_splices; _} ->
       let splices ppf =
-        List.iter (fun {lc_code;_} -> fprintf ppf "%a@," lam lc_code) in
+        List.iter (code_description ppf) in
       fprintf ppf "@[<2>(rebuild:@ %a)@ @[splices: %a@]@]"
         lam lc_code splices lc_splices
   | Lsplice n ->
@@ -401,6 +401,21 @@ and sequence ppf = function
       fprintf ppf "%a@ %a" sequence l1 sequence l2
   | l ->
       lam ppf l
+
+and code_description ppf {lc_code; lc_offsets; lc_block; _} =
+  let pr_field ppf n =
+    match lc_block with
+    | Some b -> fprintf ppf "(%#x[block:%#x])"
+                  (Obj.obj (Obj.field b n)) (Obj.obj b)
+    | None -> fprintf ppf "(null)" in
+  let pr ppf tbl =
+    Tbl.iter (fun id pos -> fprintf ppf "@[%a: %d %a@]"
+                 Ident.print id pos pr_field pos) tbl in
+  let pr_tbl ppf = function
+    | Some (id, tbl) -> fprintf ppf "@[%a::@ %a@]" Ident.print id pr tbl
+    | None -> () in
+  fprintf ppf "@[%a@ %a@]" lam lc_code pr_tbl lc_offsets
+
 
 let structured_constant = struct_const
 

@@ -107,7 +107,6 @@ let occurs_var var u =
     | Urun _ -> false
     | Uescape _ -> false
     | Usplice _ -> false
-    | Urebuild _ -> false
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do
@@ -252,7 +251,7 @@ let lambda_smaller lam threshold =
     | Usend(_, met, obj, args, _) ->
         size := !size + 8;
         lambda_size met; lambda_size obj; lambda_list_size args
-    | Ucode _ | Urun _ | Uescape _ | Urebuild _ | Usplice _
+    | Ucode _ | Urun _ | Uescape _ | Usplice _
       -> raise Exit (* Copied from [Uclosure] case *)
   and lambda_list_size l = List.iter lambda_size l
   and lambda_array_size a = Array.iter lambda_size a in
@@ -650,7 +649,6 @@ let rec substitute fpc sb ulam =
   | Ucode _ as c -> c
   | Urun _ as r -> r
   | Uescape _ as e -> e
-  | Urebuild _ as r -> r
   | Usplice _ as s -> s
 
 let collect_splices l =
@@ -685,7 +683,7 @@ let collect_splices l =
         let (args', a') = List.fold_right
             (fun arg (args, a) ->
                let (arg', a') = f (l, a) arg in
-               (arg::args, a')) args ([], a) in
+               (arg'::args, a')) args ([], a) in
         (Lprim(p, args'), a')
     | Lswitch(arg, sw) ->
         let (arg', a1) = f (l, a) arg in
@@ -1239,25 +1237,15 @@ let rec close fenv cenv = function
                             that are bound by the [let rec] that is being closure-converted *)
                          uc_marshalled_fenv = Marshal.to_string fenv []} in
         (Uprim(Prebuild, [ucode], Debuginfo.none), Value_unknown)
-  | Lrun {lc_code; lc_offsets; lc_marshalled_fenv; lc_block} ->
-      let pr_tbl ppf tbl =
-        let pr_field ppf n =
-          match lc_block with
-          | Some b -> fprintf ppf "(%#x)" (Obj.obj (Obj.field b n))
-          | None -> fprintf ppf "(null)" in
-        let pr ppf tbl =
-          Tbl.iter (fun id pos -> fprintf ppf "%a: %d %a;@ "
-                       Ident.print id pos pr_field pos) tbl in
-        match tbl with
-        | Some (_, tbl) -> fprintf ppf "@[%a@]@." pr tbl
-        | None -> () in
+  | Lrun ({lc_code; lc_offsets; lc_marshalled_fenv; lc_block} as cd) ->
       let pr_fenv ppf tbl =
         let pr ppf tbl =
           Tbl.iter (fun id approx -> fprintf ppf "%a: %a;@ "
                        Ident.print id Printclambda.approx approx) tbl in
         fprintf ppf "@[%a@]@." pr tbl in
       if !Clflags.dump_rawlambda then
-        eprintf "@[Closure.close(Lrun):@ lc_offsets@ %a@]@." pr_tbl lc_offsets;
+        eprintf "@[Closure.close(Lrun):@ code_description@ %a@]@."
+          Printlambda.code_description cd;
       let cenv' = match lc_offsets with
         | Some (env_param, offsets) ->
             Tbl.fold (fun id pos cenv ->
@@ -1266,52 +1254,54 @@ let rec close fenv cenv = function
         | None -> Tbl.empty in
       let fenv' = (Marshal.from_string lc_marshalled_fenv 0
                    : (Ident.t, value_approximation) Tbl.t) in
+      let params = match lc_offsets with
+        | Some (env_param, offsets) ->
+            let env_params = Tbl.fold (fun id _ lst -> id::lst) offsets [] in
+            (Ident.create "param")::env_params
+        | None -> [Ident.create "param"] in
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lrun):@ fenv'@ %a@]@." pr_fenv fenv';
-      let funct = Lfunction(Curried, [Ident.create "param"], lc_code) in
+      let funct = Lfunction(Curried, params, lc_code) in
       let (clos, _) = close fenv' cenv' funct in
       let cl = function
-        | Uclosure([f], _) -> f
+        | Uclosure([f], _) ->
+            let body = substitute !Clflags.float_const_prop cenv' f.body in
+            {f with Clambda.arity = 1;
+                    body;
+                    params = match lc_offsets with
+                      | Some (env_param, _) ->
+                          if occurs_var env_param body then
+                            [Ident.create "param"; env_param]
+                          else [Ident.create "param"]
+                      | None -> [Ident.create "param"]}
         | _ -> fatal_error "Closure.close(Lrun): unexpected result from close" in
       let blk = function
         | Some b -> b
         | None -> fatal_error "Closure.close(Lrun): null lc_block pointer" in
-      (Urun (cl clos, blk lc_block), Value_unknown)
+      let f = cl clos in
+      let pr_f ppf {Clambda.label; arity; params; body; _} =
+        fprintf ppf "@[%s#%d@ (%a) %a@]"
+          label arity
+          (fun ppf -> List.iter (fprintf ppf "%a@ " Ident.print)) params
+          Printclambda.clambda body in
+      if !Clflags.dump_rawlambda then
+        eprintf "@[Closure.close(Lrun): f %a@]@." pr_f f;
+      (Urun (f, blk lc_block), Value_unknown)
   | Lescape (n, lam) ->
       let (ulam, _) = close fenv cenv lam in
       (Uescape ulam, Value_unknown)
   | Lrebuild {lc_code; lc_offsets; lc_marshalled_fenv; lc_block;
               lc_splices; lc_splices_count} ->
-      let pr_tbl ppf tbl =
-        let pr_field ppf n =
-          match lc_block with
-          | Some b -> fprintf ppf "(%#x)" (Obj.obj (Obj.field b n))
-          | None -> fprintf ppf "(null)" in
-        let pr ppf tbl =
-          Tbl.iter (fun id pos -> fprintf ppf "%a: %d %a;@;"
-                       Ident.print id pos pr_field pos) tbl in
-        match tbl with
-        | Some (id, tbl) -> fprintf ppf "@[%a:: %a@]@." Ident.print id pr tbl
-        | None -> () in
-      let pr_lc ppf = List.iter (fun {lc_code;_} ->
-          fprintf ppf "%a;@;" Printlambda.lambda lc_code) in
-      let pr_blk ppf = function
-        | Some b -> fprintf ppf "%#x" (Obj.obj b)
-        | None -> fprintf ppf "(null)" in
-      let pr_instr ppf = List.iter (fun i -> fprintf ppf "%a@ "
-                                       Printclambda.clambda i) in
+      let splices ppf =
+        List.iter (Printlambda.code_description ppf) in
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lrebuild):@ lc_code:@ %a@ lc_splices:%a@]@."
-          Printlambda.lambda lc_code pr_lc lc_splices;
-      if !Clflags.dump_rawlambda then
-        eprintf "@[Closure.close(Lrebuild):@ lc_offsets:@ %a@]@." pr_tbl lc_offsets;
-      if !Clflags.dump_rawlambda then
-        eprintf "@[Closure.close(Lrebuild):@ lc_block:@ %a@]@." pr_blk lc_block;
+          Printlambda.lambda lc_code splices lc_splices;
       let fenv' = (Marshal.from_string lc_marshalled_fenv 0
                    : (Ident.t, value_approximation) Tbl.t) in
       let pointer_of_block = function
         | Some b -> Uconst(Uconst_ptr (Obj.obj b))
-        | None -> failwith "Closure.close(pointer_of_block): Null pointer" in
+        | None -> failwith "Closure.close(Lrebuild/pointer_of_block): Null pointer" in
       let uc_cvars_of_offsets offsets =
         let ulam_of_approx = function
           | Value_const c -> Some (Uconst c)
@@ -1322,21 +1312,25 @@ let rec close fenv cenv = function
           |> List.map (fun (id, pos) ->
               if Tbl.mem id fenv' then
                 let f = function
-                  | Some ulam -> ulam
-                  | None ->  Uprim(Pfield pos,
-                                   [pointer_of_block lc_block],
-                                   Debuginfo.none) in
+                  | Some ulam -> (id, ulam)
+                  | None ->  (id, Uprim(Pfield pos,
+                                        [pointer_of_block lc_block],
+                                        Debuginfo.none)) in
                 f (ulam_of_approx (Tbl.find id fenv'))
               else
-                Uprim(Pfield pos,
-                      [pointer_of_block lc_block],
-                      Debuginfo.none)) in
+                (id, Uprim(Pfield pos,
+                           [pointer_of_block lc_block],
+                           Debuginfo.none))) in
         match offsets with
         | Some (_, offsets) -> make_cvars offsets
         | None -> [] in
-      let uc_cvars = uc_cvars_of_offsets lc_offsets in
+      let (ids, uc_cvars) = List.split (uc_cvars_of_offsets lc_offsets) in
       if !Clflags.dump_rawlambda then
-        eprintf "@[Closure.close(Lrebuild):@ uc_cvars:@ %a@]@." pr_instr uc_cvars;
+        eprintf "@[Closure.close(Lrebuild):@ uc_cvars:@ %a@]@."
+          (fun ppf ->
+             List.iter (fun (id, ulam) -> fprintf ppf "%a:@ %a"
+                           Ident.print id Printclambda.clambda ulam))
+          (List.combine ids uc_cvars);
       let cenv' = match lc_offsets with
         | Some (env_param, offsets) ->
             Tbl.fold (fun id pos cenv ->
@@ -1399,6 +1393,9 @@ let rec close fenv cenv = function
           | Lrebuild _ -> failwith "Closure.close.splice_in_code(Lrebuild)"
           | Lsplice n ->
               let {lc_code;_} = List.nth lc_splices n in
+              if !Clflags.dump_rawlambda then
+                eprintf "@[Closure.close(Lsplice(%d):@ %a)@]@."
+                  n Printlambda.lambda lc_code;
               lc_code in
         f lam in
       let body = splice_in_code lc_code in
@@ -1445,9 +1442,9 @@ let rec close fenv cenv = function
             (Some(ep, offsets'), pos, copy_instr)
         | None -> (None, pos, []) in
       if !Clflags.dump_rawlambda then
-        eprintf "@[Closure.close(Lrebuild)@ copy_instr: %a@]@." pr_instr copy_instr;
-      if !Clflags.dump_rawlambda then
-        eprintf "@[Closure.close(Lrebuild)@ lc_offsets': %a@]@." pr_tbl lc_offsets';
+        eprintf "@[Closure.close(Lrebuild)@ copy_instr: %a@]@."
+          (fun ppf -> List.iter (fun i -> Printclambda.clambda ppf i))
+          copy_instr;
       let (body', splices) = collect_splices body in
       let (usplices, _) =
         List.map (close fenv' cenv') splices
@@ -1470,18 +1467,15 @@ let rec close fenv cenv = function
           (close_one_function fenv cenv (Ident.create "udummy") dummy) in
       let ucd =  {uc_code=body'; uc_splices = usplices;
                   uc_function=udummy;
-                  uc_cvars;
+                  uc_cvars=uc_cvars @ copy_instr;
                   uc_offsets=lc_offsets';
                   (* no need to get [fenv_rec] out of [close_functions] ([close_one_function])
                      since [fenv_rec] is built from [fenv] by adding to
                      [fenv] only the [Value_closure]... entries for function(s)
                      that are bound by the [let rec] that is being closure-converted *)
                   uc_marshalled_fenv = lc_marshalled_fenv} in
-      let urebuild = Urebuild (ucd, copy_instr) in
-      eprintf "@[Closure.close(Lrebuild):@ List.length usplices: %d@]@."
-        (List.length usplices);
       if 0 < List.length usplices then
-        (Uprim(Prebuild, [urebuild], Debuginfo.none), Value_unknown)
+        (Uprim(Prebuild, [Ucode ucd], Debuginfo.none), Value_unknown)
       else
         (Ucode ucd, Value_unknown)
   | Lsplice n -> (Usplice n, Value_unknown)
@@ -1746,7 +1740,7 @@ let collect_exported_structured_constants a =
     | Ufor (_, u1, u2, _, u3) -> ulam u1; ulam u2; ulam u3
     | Uassign (_, u) -> ulam u
     | Usend (_, u1, u2, ul, _) -> ulam u1; ulam u2; List.iter ulam ul
-    | Ucode _ | Urun _ | Uescape _ | Usplice _ | Urebuild _ -> ()
+    | Ucode _ | Urun _ | Uescape _ | Usplice _ -> ()
   in
   approx a
 

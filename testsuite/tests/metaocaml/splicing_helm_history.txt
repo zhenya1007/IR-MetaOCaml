@@ -1,0 +1,1519 @@
+comint-input-ring is a variable defined in `comint.el'.
+Its value is shown below.
+
+  This variable's buffer-local value is permanent.
+
+Documentation:
+Not documented as a variable.
+
+Value:
+(179 500 .
+     [#("cd ../bin" 0 9
+        (fontified t))
+      #("ls" 0 2
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let f a = .<a>. in .! (f 4);;" 0 22
+        (fontified t)
+        22 26
+        (fontified t)
+        26 29
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let a = 4 in .<a>.;;" 0 20
+        (fontified t))
+      #(".! (let a = 4 in .<a>.);;" 0 3
+        (fontified t)
+        3 22
+        (fontified t)
+        22 25
+        (fontified t))
+      #("let f a = .<a> in (.! (f (fun () -> \"Hello\"))) ();;" 0 18
+        (fontified t)
+        18 22
+        (fontified t)
+        22 25
+        (fontified t)
+        25 30
+        (fontified t)
+        30 31
+        (fontified t)
+        31 33
+        (fontified t)
+        33 35
+        (fontified t face font-lock-comment-face)
+        35 36
+        (fontified t)
+        36 42
+        (fontified t)
+        42 43
+        (fontified t)
+        43 44
+        (fontified t)
+        44 45
+        (fontified t)
+        45 47
+        (fontified t)
+        47 48
+        (fontified t)
+        48 51
+        (fontified t))
+      #("let f a = .<a>. in (.! (f (fun () -> \"Hello\"))) ();;" 0 34
+        (fontified t)
+        34 36
+        (fontified t face font-lock-comment-face)
+        36 52
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #(".! (let a = 4 in .<a>.);;" 0 25
+        (fontified t))
+      #("let f a = .<a>. in .! (f 4);;" 0 29
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let f a = .<a>. in .! (f 4);;" 0 29
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let f a = .<a>. in .! (f 4);;" 0 29
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let f a = .<a>. in .! (f 4);;" 0 29
+        (fontified t))
+      #("let f a = .<a>. in\n   (.! (f (fun () -> \"Hello\"))) ();;" 0 3
+        (fontified t)
+        3 4
+        (fontified t)
+        4 5
+        (fontified t)
+        5 7
+        (fontified t)
+        7 8
+        (fontified t)
+        8 9
+        (fontified t)
+        9 11
+        (fontified t)
+        11 12
+        (fontified t)
+        12 13
+        (fontified t)
+        13 15
+        (fontified t)
+        15 16
+        (fontified t)
+        16 18
+        (fontified t)
+        18 19
+        (fontified t)
+        19 22
+        (fontified t)
+        22 23
+        (fontified t)
+        23 24
+        (fontified t)
+        24 25
+        (fontified t)
+        25 26
+        (fontified t)
+        26 27
+        (fontified t)
+        27 29
+        (fontified t)
+        29 30
+        (fontified t)
+        30 33
+        (fontified t)
+        33 34
+        (fontified t)
+        34 35
+        (fontified t)
+        35 36
+        (fontified t)
+        36 37
+        (fontified t)
+        37 38
+        (fontified t face font-lock-comment-face)
+        38 39
+        (fontified t face font-lock-comment-face)
+        39 40
+        (fontified t)
+        40 47
+        (fontified t)
+        47 48
+        (fontified t)
+        48 49
+        (fontified t)
+        49 50
+        (fontified t)
+        50 51
+        (fontified t)
+        51 52
+        (fontified t)
+        52 53
+        (fontified t)
+        53 54
+        (fontified t)
+        54 55
+        (rear-nonsticky t fontified t))
+      #("let r = ref 4 in\nlet f a = .<a>. in\nlet () = (.! (f (fun () -> r := 5))) () in\n!r ;;" 0 3
+        (fontified t)
+        3 4
+        (fontified t)
+        4 5
+        (fontified t)
+        5 6
+        (fontified t)
+        6 7
+        (fontified t)
+        7 8
+        (fontified t)
+        8 11
+        (fontified t)
+        11 14
+        (fontified t)
+        14 16
+        (fontified t)
+        16 17
+        (fontified t)
+        17 20
+        (fontified t)
+        20 21
+        (fontified t)
+        21 22
+        (fontified t)
+        22 24
+        (fontified t)
+        24 25
+        (fontified t)
+        25 26
+        (fontified t)
+        26 28
+        (fontified t)
+        28 29
+        (fontified t)
+        29 30
+        (fontified t)
+        30 32
+        (fontified t)
+        32 33
+        (fontified t)
+        33 35
+        (fontified t)
+        35 36
+        (fontified t)
+        36 39
+        (fontified t)
+        39 40
+        (fontified t)
+        40 41
+        (fontified t)
+        41 42
+        (fontified t)
+        42 43
+        (fontified t)
+        43 44
+        (fontified t)
+        44 45
+        (fontified t)
+        45 46
+        (fontified t)
+        46 47
+        (fontified t)
+        47 48
+        (fontified t)
+        48 49
+        (fontified t)
+        49 50
+        (fontified t)
+        50 52
+        (fontified t)
+        52 53
+        (fontified t)
+        53 56
+        (fontified t)
+        56 57
+        (fontified t)
+        57 58
+        (fontified t)
+        58 59
+        (fontified t)
+        59 60
+        (fontified t)
+        60 61
+        (fontified t face font-lock-comment-face)
+        61 62
+        (fontified t face font-lock-comment-face)
+        62 65
+        (fontified t)
+        65 66
+        (fontified t)
+        66 67
+        (fontified t)
+        67 69
+        (fontified t)
+        69 70
+        (fontified t)
+        70 71
+        (fontified t)
+        71 72
+        (fontified t)
+        72 73
+        (fontified t)
+        73 74
+        (fontified t)
+        74 75
+        (fontified t)
+        75 76
+        (fontified t)
+        76 78
+        (fontified t)
+        78 79
+        (fontified t)
+        79 80
+        (fontified t)
+        80 82
+        (fontified t)
+        82 83
+        (fontified t)
+        83 84
+        (rear-nonsticky t fontified t))
+      #("let c =\n  let r = ref 5 in\n  let f a = .<a>. in\n  f r;;\nGc.compact ();;\n!(.! c);;\n" 0 3
+        (fontified t)
+        3 4
+        (fontified t)
+        4 5
+        (fontified t)
+        5 6
+        (fontified t)
+        6 7
+        (fontified t)
+        7 10
+        (fontified t)
+        10 13
+        (fontified t)
+        13 14
+        (fontified t)
+        14 15
+        (fontified t)
+        15 16
+        (fontified t)
+        16 17
+        (fontified t)
+        17 18
+        (fontified t)
+        18 21
+        (fontified t)
+        21 24
+        (fontified t)
+        24 26
+        (fontified t)
+        26 29
+        (fontified t)
+        29 32
+        (fontified t)
+        32 33
+        (fontified t)
+        33 34
+        (fontified t)
+        34 36
+        (fontified t)
+        36 37
+        (fontified t)
+        37 38
+        (fontified t)
+        38 40
+        (fontified t)
+        40 41
+        (fontified t)
+        41 42
+        (fontified t)
+        42 44
+        (fontified t)
+        44 45
+        (fontified t)
+        45 47
+        (fontified t)
+        47 53
+        (fontified t)
+        53 54
+        (fontified t)
+        54 55
+        (fontified t)
+        55 56
+        (fontified t)
+        56 59
+        (fontified t)
+        59 67
+        (fontified t)
+        67 68
+        (fontified t)
+        68 69
+        (fontified t)
+        69 70
+        (fontified t)
+        70 71
+        (fontified t)
+        71 72
+        (fontified t)
+        72 73
+        (fontified t)
+        73 74
+        (fontified t)
+        74 75
+        (fontified t)
+        75 76
+        (fontified t)
+        76 78
+        (fontified t)
+        78 79
+        (fontified t)
+        79 80
+        (fontified t)
+        80 81
+        (fontified t)
+        81 82
+        (fontified t))
+      #("Obj.obj;;" 0 9
+        (fontified t))
+      #("let a = 4 in .< .~ .<a>. >.;;" 0 29
+        (fontified t))
+      #(".! (let a = 4 in .< .~ .<a>. >.);;" 0 3
+        (fontified t)
+        3 4
+        (fontified t)
+        4 34
+        (fontified t))
+      #("let a = .<4>. in .! a;;" 0 23
+        (fontified t))
+      #("let a = .<4>. in .! (.< .~ a >.);;" 0 20
+        (fontified t)
+        20 31
+        (fontified t)
+        31 34
+        (fontified t))
+      #("let ca = let a = .<4> in .< .~ a >.;;" 0 37
+        (fontified t))
+      #("let ca = let a = .<4>. in .< .~ a >.;;" 0 38
+        (fontified t))
+      #(".! ca;;" 0 7
+        (fontified t))
+      #("let cab = let a = .<4>. and b = .<5>. in .< .~a + .~b >.;;" 0 10
+        (fontified t)
+        10 58
+        (fontified t))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 44
+        (fontified t)
+        44 45
+        (fontified t)
+        45 52
+        (fontified t)
+        52 53
+        (fontified t)
+        53 62
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let a = .<4>. in .! a;;" 0 23
+        (fontified t))
+      #("let ca = let a = .<4> in .< .~ a >.;;" 0 37
+        (fontified t))
+      #("let ca = let a = .<4>. in .< .~ a >.;;" 0 38
+        (fontified t))
+      #(".! ca" 0 5
+        (fontified t))
+      #(";;" 0 2
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 52
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 52
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let a = .<4>. in .< .~a >.;;" 0 28
+        (fontified t))
+      #(".! let a = .<4>. in .< .~a >.;;" 0 3
+        (fontified t)
+        3 31
+        (fontified t))
+      #("let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 52
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 52
+        (fontified t))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #(".! cab;;" 0 8
+        (fontified t))
+      #("let f = .<fun x -> x + 4>. in .< (.~f) 5 >.;;" 0 16
+        (fontified t)
+        16 18
+        (fontified t face font-lock-comment-face)
+        18 33
+        (fontified t)
+        33 37
+        (fontified t)
+        37 45
+        (fontified t))
+      #("let cf = let f = .<fun x -> x + 4>. in .< (.~f) 5 >.;;" 0 9
+        (fontified t)
+        9 25
+        (fontified t)
+        25 27
+        (fontified t face font-lock-comment-face)
+        27 54
+        (fontified t))
+      #(".!cf;;" 0 6
+        (fontified t))
+      #("let f x = .<x>. in .< .~(f 9)>.;;" 0 24
+        (fontified t)
+        24 28
+        (fontified t)
+        28 33
+        (fontified t))
+      #("let cf = let f x = .<x>. in .< .~(f 9)>.;;" 0 9
+        (fontified t)
+        9 42
+        (fontified t))
+      #("!cf;;" 0 5
+        (fontified t))
+      #(".!cf;;" 0 6
+        (fontified t))
+      #("let f x = .<x>. in let a = f 9 in .! .< .~a >.;;" 0 48
+        (fontified t))
+      #("let f x = .<x>. in let a = f 9 in .! a;;" 0 40
+        (fontified t))
+      #("let f = .<fun x -> x + 4>. in .< (.~f) 5 >.;;" 0 16
+        (fontified t)
+        16 18
+        (fontified t face font-lock-comment-face)
+        18 45
+        (fontified t))
+      #("let cf = let f = .<fun x -> x + 4>. in .< (.~f) 5 >.;;" 0 25
+        (fontified t)
+        25 27
+        (fontified t face font-lock-comment-face)
+        27 54
+        (fontified t))
+      #(".!cf" 0 4
+        (fontified t))
+      #(";;" 0 2
+        (fontified t))
+      #("let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 52
+        (fontified t))
+      #("let f a = .<a>. in .! (f 4);;" 0 22
+        (fontified t)
+        22 26
+        (fontified t)
+        26 29
+        (fontified t))
+      #("let f a = .<a>. in .< .~(f 4)>.;;" 0 24
+        (fontified t)
+        24 28
+        (fontified t)
+        28 33
+        (fontified t))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 3
+        (fontified t)
+        3 4
+        (fontified t)
+        4 38
+        (fontified t))
+      #("let f a = .<a>. in .< .~(f 4)>.;;" 0 33
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let f a = .<a>. in .! (f 4);;" 0 29
+        (fontified t))
+      #("let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 52
+        (fontified t))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #(".!cab;;" 0 7
+        (fontified t))
+      #("let f a = .<a>. in .< .~(f 4)>.;;" 0 33
+        (fontified t))
+      #("#quit" 0 5
+        (fontified t))
+      #(";;" 0 2
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 52
+        (fontified t))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #(".! cab;;" 0 8
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #(".! cab;;" 0 8
+        (fontified t))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("printf \"%#x\" 70281283579584;;" 0 7
+        (fontified t)
+        7 11
+        (fontified t)
+        11 13
+        (fontified t)
+        13 19
+        (front-sticky
+         (field inhibit-line-move-field-capture)
+         rear-nonsticky t inhibit-line-move-field-capture t fontified t)
+        19 27
+        (front-sticky
+         (field inhibit-line-move-field-capture)
+         rear-nonsticky t inhibit-line-move-field-capture t fontified t)
+        27 29
+        (fontified t))
+      #("Printf.prinf \"%#x\" 70281283579584;;" 0 13
+        (fontified t)
+        13 17
+        (fontified t)
+        17 19
+        (fontified t)
+        19 25
+        (front-sticky
+         (field inhibit-line-move-field-capture)
+         rear-nonsticky t inhibit-line-move-field-capture t fontified t)
+        25 33
+        (front-sticky
+         (field inhibit-line-move-field-capture)
+         rear-nonsticky t inhibit-line-move-field-capture t fontified t)
+        33 35
+        (fontified t))
+      #("Printf.printf \"%#x\" 70281283579584;;" 0 14
+        (fontified t)
+        14 18
+        (fontified t)
+        18 20
+        (fontified t)
+        20 26
+        (front-sticky
+         (field inhibit-line-move-field-capture)
+         rear-nonsticky t inhibit-line-move-field-capture t fontified t)
+        26 34
+        (front-sticky
+         (field inhibit-line-move-field-capture)
+         rear-nonsticky t inhibit-line-move-field-capture t fontified t)
+        34 36
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #(".! cab;;" 0 8
+        (fontified t))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("Printf.printf \"%#x\" 69819192977128;;" 0 14
+        (fontified t)
+        14 18
+        (fontified t)
+        18 20
+        (fontified t)
+        20 34
+        (front-sticky
+         (field inhibit-line-move-field-capture)
+         rear-nonsticky t inhibit-line-move-field-capture t fontified t)
+        34 36
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("let f a = .<a>. in\n   .! (f 4);;" 0 3
+        (fontified t)
+        3 4
+        (fontified t)
+        4 5
+        (fontified t)
+        5 7
+        (fontified t)
+        7 8
+        (fontified t)
+        8 9
+        (fontified t)
+        9 11
+        (fontified t)
+        11 12
+        (fontified t)
+        12 13
+        (fontified t)
+        13 15
+        (fontified t)
+        15 16
+        (fontified t)
+        16 18
+        (fontified t)
+        18 19
+        (fontified t)
+        19 23
+        (fontified t)
+        23 24
+        (fontified t)
+        24 25
+        (fontified t)
+        25 26
+        (fontified t)
+        26 29
+        (fontified t)
+        29 30
+        (fontified t)
+        30 31
+        (fontified t)
+        31 32
+        (rear-nonsticky t fontified t))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #(".!cab;;" 0 7
+        (fontified t))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("let f a = .<a>. in\n   .! (f 4);;" 0 3
+        (fontified t)
+        3 4
+        (fontified t)
+        4 5
+        (fontified t)
+        5 7
+        (fontified t)
+        7 8
+        (fontified t)
+        8 9
+        (fontified t)
+        9 11
+        (fontified t)
+        11 12
+        (fontified t)
+        12 13
+        (fontified t)
+        13 15
+        (fontified t)
+        15 16
+        (fontified t)
+        16 18
+        (fontified t)
+        18 19
+        (fontified t)
+        19 23
+        (fontified t)
+        23 24
+        (fontified t)
+        24 25
+        (fontified t)
+        25 26
+        (fontified t)
+        26 29
+        (fontified t)
+        29 30
+        (fontified t)
+        30 31
+        (fontified t)
+        31 32
+        (rear-nonsticky t fontified t))
+      #("Printf.printf \"%#x\" 70083725880856;;" 0 14
+        (fontified t)
+        14 18
+        (fontified t)
+        18 20
+        (fontified t)
+        20 34
+        (front-sticky
+         (field inhibit-line-move-field-capture)
+         rear-nonsticky t inhibit-line-move-field-capture t fontified t)
+        34 36
+        (fontified t))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #(".!cab;;" 0 7
+        (fontified t))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("let f a = .<a>. in" 0 18
+        (fontified t))
+      #("   .! (f 4);;" 0 13
+        (fontified t))
+      #("Printf.printf \"%#x\" 70083711168032;;" 0 14
+        (fontified t)
+        14 18
+        (fontified t)
+        18 20
+        (fontified t)
+        20 34
+        (front-sticky
+         (field inhibit-line-move-field-capture)
+         rear-nonsticky t inhibit-line-move-field-capture t fontified t)
+        34 36
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #(".!cab;;" 0 7
+        (fontified t))
+      #("let f a = .<a>. in .! (f 4);;" 0 22
+        (fontified t)
+        22 26
+        (fontified t)
+        26 29
+        (fontified t))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("Printf.printf \"%#x\" 70280434987932;;" 0 14
+        (fontified t)
+        14 18
+        (fontified t)
+        18 20
+        (fontified t)
+        20 34
+        (front-sticky
+         (field inhibit-line-move-field-capture)
+         rear-nonsticky t inhibit-line-move-field-capture t fontified t)
+        34 36
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let cab = let a = .<4>. and b = .<5>. in .< (.~a) + (.~b) >.;;" 0 62
+        (fontified t))
+      #(".! cab;;" 0 8
+        (fontified t))
+      #("let f a = .<a>. in .! (f 4);;" 0 22
+        (fontified t)
+        22 26
+        (fontified t)
+        26 29
+        (fontified t))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("let f a = .<a>. in\n   (.! (f (fun () -> \"Hello\"))) ();;" 0 3
+        (fontified t)
+        3 4
+        (fontified t)
+        4 5
+        (fontified t)
+        5 7
+        (fontified t)
+        7 8
+        (fontified t)
+        8 9
+        (fontified t)
+        9 11
+        (fontified t)
+        11 12
+        (fontified t)
+        12 13
+        (fontified t)
+        13 15
+        (fontified t)
+        15 16
+        (fontified t)
+        16 18
+        (fontified t)
+        18 19
+        (fontified t)
+        19 22
+        (fontified t)
+        22 23
+        (fontified t)
+        23 24
+        (fontified t)
+        24 25
+        (fontified t)
+        25 26
+        (fontified t)
+        26 27
+        (fontified t)
+        27 29
+        (fontified t)
+        29 30
+        (fontified t)
+        30 33
+        (fontified t)
+        33 34
+        (fontified t)
+        34 35
+        (fontified t)
+        35 36
+        (fontified t)
+        36 37
+        (fontified t)
+        37 38
+        (fontified t face font-lock-comment-face)
+        38 39
+        (fontified t face font-lock-comment-face)
+        39 40
+        (fontified t)
+        40 47
+        (fontified t)
+        47 48
+        (fontified t)
+        48 49
+        (fontified t)
+        49 50
+        (fontified t)
+        50 51
+        (fontified t)
+        51 52
+        (fontified t)
+        52 53
+        (fontified t)
+        53 54
+        (fontified t)
+        54 55
+        (rear-nonsticky t fontified t))
+      #("let r = ref 4 in\nlet f a = .<a>. in\nlet () = (.! (f (fun () -> r := 5))) () in\n!r ;;" 0 3
+        (fontified t)
+        3 4
+        (fontified t)
+        4 5
+        (fontified t)
+        5 6
+        (fontified t)
+        6 7
+        (fontified t)
+        7 8
+        (fontified t)
+        8 11
+        (fontified t)
+        11 14
+        (fontified t)
+        14 16
+        (fontified t)
+        16 17
+        (fontified t)
+        17 20
+        (fontified t)
+        20 21
+        (fontified t)
+        21 22
+        (fontified t)
+        22 24
+        (fontified t)
+        24 25
+        (fontified t)
+        25 26
+        (fontified t)
+        26 28
+        (fontified t)
+        28 29
+        (fontified t)
+        29 30
+        (fontified t)
+        30 32
+        (fontified t)
+        32 33
+        (fontified t)
+        33 35
+        (fontified t)
+        35 36
+        (fontified t)
+        36 39
+        (fontified t)
+        39 40
+        (fontified t)
+        40 41
+        (fontified t)
+        41 42
+        (fontified t)
+        42 43
+        (fontified t)
+        43 44
+        (fontified t)
+        44 45
+        (fontified t)
+        45 46
+        (fontified t)
+        46 47
+        (fontified t)
+        47 48
+        (fontified t)
+        48 49
+        (fontified t)
+        49 50
+        (fontified t)
+        50 52
+        (fontified t)
+        52 53
+        (fontified t)
+        53 56
+        (fontified t)
+        56 57
+        (fontified t)
+        57 58
+        (fontified t)
+        58 59
+        (fontified t)
+        59 60
+        (fontified t)
+        60 61
+        (fontified t face font-lock-comment-face)
+        61 62
+        (fontified t face font-lock-comment-face)
+        62 65
+        (fontified t)
+        65 66
+        (fontified t)
+        66 67
+        (fontified t)
+        67 69
+        (fontified t)
+        69 70
+        (fontified t)
+        70 71
+        (fontified t)
+        71 72
+        (fontified t)
+        72 73
+        (fontified t)
+        73 74
+        (fontified t)
+        74 75
+        (fontified t)
+        75 76
+        (fontified t)
+        76 78
+        (fontified t)
+        78 79
+        (fontified t)
+        79 80
+        (fontified t)
+        80 82
+        (fontified t)
+        82 83
+        (fontified t)
+        83 84
+        (rear-nonsticky t fontified t))
+      #("let c =\n  let r = ref 5 in\n  let f a = .<a>. in\n  f r;;\nGc.compact ();;\n!(.! c);;\n" 0 3
+        (fontified t)
+        3 4
+        (fontified t)
+        4 5
+        (fontified t)
+        5 6
+        (fontified t)
+        6 7
+        (fontified t)
+        7 10
+        (fontified t)
+        10 13
+        (fontified t)
+        13 14
+        (fontified t)
+        14 15
+        (fontified t)
+        15 16
+        (fontified t)
+        16 17
+        (fontified t)
+        17 18
+        (fontified t)
+        18 21
+        (fontified t)
+        21 24
+        (fontified t)
+        24 26
+        (fontified t)
+        26 29
+        (fontified t)
+        29 32
+        (fontified t)
+        32 33
+        (fontified t)
+        33 34
+        (fontified t)
+        34 36
+        (fontified t)
+        36 37
+        (fontified t)
+        37 38
+        (fontified t)
+        38 40
+        (fontified t)
+        40 41
+        (fontified t)
+        41 42
+        (fontified t)
+        42 44
+        (fontified t)
+        44 45
+        (fontified t)
+        45 47
+        (fontified t)
+        47 53
+        (fontified t)
+        53 54
+        (fontified t)
+        54 55
+        (fontified t)
+        55 56
+        (fontified t)
+        56 59
+        (fontified t)
+        59 67
+        (fontified t)
+        67 68
+        (fontified t)
+        68 69
+        (fontified t)
+        69 70
+        (fontified t)
+        70 71
+        (fontified t)
+        71 72
+        (fontified t)
+        72 73
+        (fontified t)
+        73 74
+        (fontified t)
+        74 75
+        (fontified t)
+        75 76
+        (fontified t)
+        76 78
+        (fontified t)
+        78 79
+        (fontified t)
+        79 80
+        (fontified t)
+        80 81
+        (fontified t)
+        81 82
+        (fontified t))
+      #(";;" 0 2
+        (fontified t))
+      #("let f a = .<a>. in .! (f 4);;" 0 29
+        (fontified t))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #(".! (let f a = .<a>. in .< .~(f 4)>.);;" 0 38
+        (fontified t))
+      #("let f a = .<a>. and b = .<5>. in .< .~(f 7) + .~b>.;;" 0 38
+        (fontified t)
+        38 42
+        (fontified t)
+        42 53
+        (fontified t))
+      #("let f a = .<a>. and b = .<5>. in .< .~(f 7) >.;;" 0 38
+        (fontified t)
+        38 42
+        (fontified t)
+        42 44
+        (fontified t)
+        44 48
+        (fontified t))
+      #("let cf = (let f a = .<a>. and b = .<5>. in .< .~(f 7) >.);;" 0 9
+        (fontified t)
+        9 10
+        (fontified t)
+        10 48
+        (fontified t)
+        48 52
+        (fontified t)
+        52 54
+        (fontified t)
+        54 59
+        (fontified t))
+      #(".! cf;;" 0 7
+        (fontified t))
+      #("let f a = .<a>. and b = .<5>. in .< (.~(f 7)) + .~b>.;;" 0 36
+        (fontified t)
+        36 37
+        (fontified t)
+        37 39
+        (fontified t)
+        39 43
+        (fontified t)
+        43 55
+        (fontified t))
+      #("let cf = (let f a = .<a>. and b = .<5>. in .< (.~(f 7)) + .~b>.);;" 0 9
+        (fontified t)
+        9 10
+        (fontified t)
+        10 46
+        (fontified t)
+        46 47
+        (fontified t)
+        47 49
+        (fontified t)
+        49 53
+        (fontified t)
+        53 63
+        (fontified t)
+        63 64
+        (fontified t)
+        64 66
+        (fontified t))
+      #(".!cf;;" 0 6
+        (fontified t))
+      #("#quit;;" 0 7
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let cf = (let f a = .<a>. and b = .<5>. in .< (.~(f 7)) + .~b>.);;" 0 66
+        (fontified t))
+      #(".! cf;;" 0 7
+        (fontified t))
+      #("let rec fact n = if n = 0 then .<1>. else .<n * .~ (fact n - 1)>.;;" 0 21
+        (fontified t)
+        21 25
+        (fontified t)
+        25 51
+        (fontified t)
+        51 59
+        (fontified t)
+        59 62
+        (fontified t)
+        62 67
+        (fontified t))
+      #("let rec fact n = if n = 0 then .<1>. else .<n * .~ fact (n - 1)>.;;" 0 21
+        (fontified t)
+        21 25
+        (fontified t)
+        25 51
+        (fontified t)
+        51 56
+        (fontified t)
+        56 57
+        (fontified t)
+        57 59
+        (fontified t)
+        59 62
+        (fontified t)
+        62 67
+        (fontified t))
+      #("./ocamlnat -noinit -drawlambda" 0 11
+        (fontified t)
+        11 18
+        (fontified t face font-lock-comment-face)
+        18 19
+        (fontified t)
+        19 30
+        (fontified t face font-lock-comment-face))
+      #("let cf = (let f a = .<a>. and b = .<5>. in .< (.~(f 7)) + .~b>.);;" 0 66
+        (fontified t))
+      #(".! cf;;" 0 7
+        (fontified t))
+      #("let f a = .<a>. and g b = .<b>. in .< .~(f 7) + .~(g 8) >.;;" 0 40
+        (fontified t)
+        40 44
+        (fontified t)
+        44 50
+        (fontified t)
+        50 60
+        (fontified t))
+      #("let f a = .<a>. and g b = .<b>. in .< (.~(f 7)) + (.~(g 8)) >.;;" 0 38
+        (fontified t)
+        38 39
+        (fontified t)
+        39 41
+        (fontified t)
+        41 45
+        (fontified t)
+        45 46
+        (fontified t)
+        46 47
+        (fontified t)
+        47 50
+        (fontified t)
+        50 51
+        (fontified t)
+        51 53
+        (fontified t)
+        53 58
+        (fontified t)
+        58 59
+        (fontified t)
+        59 64
+        (fontified t))
+      #("let cf = (let f a = .<a>. and g b = .<b>. in .< (.~(f 7)) + (.~(g 8)) >.);;" 0 9
+        (fontified t)
+        9 10
+        (fontified t)
+        10 48
+        (fontified t)
+        48 49
+        (fontified t)
+        49 51
+        (fontified t)
+        51 55
+        (fontified t)
+        55 56
+        (fontified t)
+        56 57
+        (fontified t)
+        57 60
+        (fontified t)
+        60 61
+        (fontified t)
+        61 63
+        (fontified t)
+        63 68
+        (fontified t)
+        68 69
+        (fontified t)
+        69 72
+        (fontified t)
+        72 73
+        (fontified t)
+        73 75
+        (fontified t))
+      #(".! cf;;" 0 7
+        (fontified t))
+      "cd .config/" "git pull origin master" "emacs --daemon" "vi HOME/dot.emacs.d/init.el.d/er-evil.el " "vi HOME/dot.emacs.d/init.el.d/er-evil.el " "git status" "git diff" "git checkout -- HOME/dot.emacs.d/init.el" "gti add ." "git commit -m\"more tweaks\"" "git status" "git add ." "git commit -m\"more tweaks\"" "ec" "emacs --daemon" "emacs --daemon" "cd .config/" "git diff" "cd HOME/dot.emacs.d/init.el.d/" "grep ace-jump *.el" "rm er-ace-jump-mode.el " "cd " "cd .config/" "killall emacs" "emacs --daemon" "ps auxww | grep emacs" "emacs --daemon" "ec ~/.emacs.d/init.el.d/erdv.el " "ls" "ec" "emacs -nw" "ls" "emacs --daemon" "exit" "emacs --daemon" "exit" "emacs --daemon" "exit" "killall emacs" "emacs -Q -nw ~/.emacs.d/init.el.d/erdv.el " "emacs --daemon" "cd .config/" "ls" "git status" "git add ." "git commit -m\"Back to using (mostly) mode-less editing, because I think Smartparens gives me all I really use in terms of 'text objects'\"" "git push origin master" "cd ~/src/ocaml" "git status" "git add ." "git commit -m \"wip\"" "git branch" "git push my-fork splicing" "cd ~/.config/" "git pull origin master" "git pull origin master" "exit" "cd .config/" "git pull origin master" "exit" "caps_lock_as_meta " "type caps_lock_as_meta " "setxkbmap -option;" "setxkbmap -option grp:sclk_toggle -option altwin:hyper_win -option ctrl:swap_lalt_lctrl" "setxkbmap -option grp:sclk_toggle -option ctrl:swap_lalt_lctrl" "" "setxkbmap -option grp:sclk_toggle -option ctrl:swap_lalt_lctrl" "setxkbmap -option grp:sclk_toggle -option ctrl:swap_lalt_lctl" ". ~/.bash_functions " "caps_lock_as_meta " "setxkbmap -option;" "type caps_lock_as_meta " "setxkbmap -option grp:sclk_toggle -option altwin:hyper_win -option ctrl:swap_lalt_lctl" "setxkbmap -option ctrl:rctrl_ralt" "" ". ~/.bash_functions " "caps_lock_as_meta " "cd .." "git status" "git add " "git add ." "git commit -m\"wip\"" "git branch" "git push my-fork splicing" "cd ~/.config/" "ls" "git status" "git add ." "git commit -m\"more tweaks\" " "git push origin master" "emacsc -nw" "emacs -nw" "emacs --daemon" "exit" "sudo aura -S xorg-xinput" "aura -Q xorg-xinput" "aura -Q -l xorg-xinput" "man xinput" "xinput --list" "man xinput" "xinput --list-props 'TPPS/2 IBM TrackPoint'" "xinput --list-props 'SynPS/2 Synaptics TouchPad'" "cd" "cd ocaml" "cd bin" "./ocamlnat -noinit" "./ocamlnat " "./ocamlnat  -noinit" "ls" "aura -A -s enlightenment" "aura -A -s enlightenment | less" "aura -A -s enlightenment | more" "aura -S -s enlightenment | more" "ls" "mkdir src" "cd ~/src" "ls" "xrdb query" "xrdb --query" "xrdb -query" "xrdb merge ~/.Xresources " "exit" "cd" "ls" "cd ~/src/ocaml" "pwd" "ls" "rm -rf bin lib" "./configure --prefix=$(pwd) " "./configure -prefix $(pwd)" "make world.opt" "make ocamlnat" "make install" "cd ./bin" "ls" "set | grep -i CAML" "unset OCAML_TOPLEVEL_PATH" "unset CAML_LD_LIBRARY_PATH" "ls" "./ocamlnat" "cd .." "grep ocamlnat Makef*" "make installocamlnat" "cd bin" "ls" "./ocamlnat" "./ocamlnat -i /dev/null" "ocamlnat -noinit" "./ocamlnat -noinit" "./ocamlnat -dlambda -dclambda -noinit" "./ocamlnat -dlambda -dclambda -noinit" "./ocamlnat -drawlambda -dclambda -noinit" "ls" "./ocamlnat" "./ocamlnat -noinit" "./ocamlnat" "./ocamlnat -noinit" "./ocamlnat -noinit -drawlambda" "./ocamlant -noinit" "./ocamlnat -noinit" "./ocamlnat -noinit" "cd .." "make asmgen/cmmgen.cmo" "make asmcomp/cmmgen.cmo" "rm asmcomp/cmmgen.cmo" "make asmcomp/cmmgen.cmo" "make ocamlnat" "make installocamlnat" "make installocamlnat" "cd bin" "./ocamlnat -noinit" "./ocamlnat -noinit " "./ocamlnat -noinit" "./ocalmnat" "./ocamlnat -noinit" "./ocamlnat -noinit" "./ocamlnat" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda -dparsetree" "ls" "./ocamlnat -noinit -drawlambda -dparsetree" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "exit" "ls" "xrdb -query" "cd src" "ls" "mkdir enlightenment" "rmdir enlightenment/" "mkdir e17" "cd e17/" "ls" "c='http://git.enlightenment.org/core'" "a=http://git.enlightenment.org/apps'" "'" "a='http://git.enlightenment.org/apps'" "for p in efl emotion_generic_players evas_generic_loaders elementary enlightenment; do get git clone $c/$p.git; done && for p in terminology rage; do git clone $a/$p.git; done" "for p in efl emotion_generic_players evas_generic_loaders elementary enlightenment; do git clone $c/$p.git; done && for p in terminology rage; do git clone $a/$p.git; done" "killall mplayer" "ls" "man aura" "aura -Ap efl" "aura -S -s efl" "aura -Mp efl" "aura -Mp efl | less" "aura -Mw efl | less" "aura -Mw efl " "man aura" " sudo aura -Mt efl" "find /var -name 'abs' -type d" "ls /var/abs/" "ls /var/abs/extra/" "ls /var/abs/extra/efl/" "ls" "aura -S -s elementary" "sudo aura -Mt elementary" "aura -S -s emotion_generic_players" "sudo aura -Mt emotion_generic_players" "aura -S -s enlightenment" "sudo aura -Mt enlightenment" "sudo aura -Mt evas_generic_loaders" "sudo aura -Mt rage " "aura -S -s rage" "aura -A -s rage" "sudo aura -A -s aur/rage" "ls" "sudo aura -Mt terminology" "ps auxww | grep emacs" "ec " "ps auxww | grep emacs" "emacs --daemon" "ec ~/.emacs.d/init.el.d/erdv.el " "emacs --daemon" "ec ~/.emacs.d/init.el.d/er-smartparens.el " "ec ~/.emacs.d/init.el.d/erdv.el " "emacs -nw -Q " "ps auxww | grep -i emacs" "emacs --daemon" "ec ~/.emacs.d/init.el.d/er-smartparens.el " "ec" "emacs --daemon" "exit" "cd Downloads/" "ls *.mp*" "ls *.part" "exit" "xrdb -query | grep -i curs" "ls /var/abs/" "ls /var/abs/local/" "ls /var/abs/extra/" "ls /var/abs/extra/r" "ls /var/abs/extra/efl/" "exit" "ls" "ls" "cd" "ls" "cd src/ocaml" "ls" "cd bin" "./ocamlnat" "./ocamlnat -noinit -dlambda" "./ocamlnat -noinit -drawlambda" "l" "ls" "./ocamlnat" "./ocamlnat -noinit -drawlambda" "ls" "b" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "ls " "ls *.core" "ls cor*" "ulimit" "ulimit -c" "ls ~/" "ls ~/*cor*" "ls" "./ocamlnat -noinit -drawlambda" "ls" "type ocamlnat" "file ocamlnat" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "ls" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat -noinit -drawlambda" "./ocamlnat" "./ocamlnat -noinit -drawlambda" "emacs --daemon" "emacs -Q -nw ~/.emacs.d/init.el.d/er-smartparens.el " "killall emacs" "emacs --daemon" "exit"])
+
+Local in buffer *shell*; global value is nil
+
+[back]

@@ -21,7 +21,6 @@ open Lambda
 open Clambda
 open Cmm
 open Cmx_format
-open Format
 
 (* Local binding of complex expressions *)
 
@@ -1395,8 +1394,6 @@ let rec transl = function
         :: (List.map transl uc_cvars)
         @ (List.map transl uc_splices) @ [Cconst_symbol lbl] in
       Queue.add uc_function functions;
-      if !Clflags.dump_rawlambda then
-        eprintf "@[Cmmgen.transl(Ucode): before Calloc@]@.";
       Cop(Calloc, heap_block)
   | Urun(uf, block) ->
       let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)

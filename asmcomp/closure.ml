@@ -1290,15 +1290,37 @@ let rec close fenv cenv = function
   | Lescape (n, lam) ->
       let (ulam, _) = close fenv cenv lam in
       (Uescape ulam, Value_unknown)
-  | Lrebuild {lc_code; lc_offsets; lc_marshalled_fenv; lc_block;
-              lc_splices; lc_splices_count} ->
-      let splices ppf =
-        List.iter (Printlambda.code_description ppf) in
+  | Lrebuild ({lc_code; lc_offsets; lc_marshalled_fenv; lc_block;
+              lc_splices; lc_splices_count} as cd) ->
       if !Clflags.dump_rawlambda then
-        eprintf "@[Closure.close(Lrebuild):@ lc_code:@ %a@ lc_splices:%a@]@."
-          Printlambda.lambda lc_code splices lc_splices;
+        eprintf "@[Closure.close(Lrebuild):@ code_description: %a@]@."
+          Printlambda.code_description cd;
       let fenv' = (Marshal.from_string lc_marshalled_fenv 0
                    : (Ident.t, value_approximation) Tbl.t) in
+      let rename_closure_vars fenv offsets =
+        let (fenv', renames) =
+          Tbl.fold (fun id approx (fenv', renames) ->
+              let id' = Ident.rename id in
+              (Tbl.add id' approx fenv', Ident.add id (Lvar id') renames))
+            fenv (Tbl.empty, Ident.empty) in
+        let (offsets', renames') =
+          match offsets with
+          | Some (ep, tbl) ->
+              let (tbl', renames') =
+                Tbl.fold (fun id pos (tbl', renames') ->
+                    let id' = Ident.rename id in
+                    (Tbl.add id' pos tbl', Ident.add id (Lvar id') renames'))
+                  tbl (Tbl.empty, renames) in
+              let ep' = Ident.rename ep in
+              (Some (ep', tbl'), Ident.add ep (Lvar ep') renames')
+          | None -> (None, renames) in
+        (fenv, offsets', renames') in
+      let (fenv', lc_offsets, renames) = rename_closure_vars fenv' lc_offsets in
+      let lc_code = Lambda.subst_lambda renames lc_code in
+      if !Clflags.dump_rawlambda then
+        eprintf "@[Closure.close(Lrebuild):@ after renaming:@ code_description: %a@]@."
+          Printlambda.code_description {lc_code; lc_offsets; lc_marshalled_fenv;
+                                        lc_block; lc_splices; lc_splices_count};
       let pointer_of_block = function
         | Some b -> Uconst(Uconst_ptr (Obj.obj b))
         | None -> failwith "Closure.close(Lrebuild/pointer_of_block): Null pointer" in

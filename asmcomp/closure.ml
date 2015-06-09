@@ -20,8 +20,6 @@ open Switch
 open Clambda
 open Format
 
-let asmgen_ppf = ref std_formatter
-
 module Storer =
   Switch.Store
     (struct
@@ -677,7 +675,7 @@ let collect_splices l =
         let (decl', a2) = List.fold_right
             (fun (id, exp) (decl, a) ->
                let (exp', a') = f (l, a) exp in
-               ((id,exp)::decl, a')) decl ([], a1) in
+               ((id,exp')::decl, a')) decl ([], a1) in
         (Lletrec(decl', body'), a2)
     | Lprim(p, args) ->
         let (args', a') = List.fold_right
@@ -1058,17 +1056,44 @@ let rec close fenv cenv = function
       then begin
         (* Simple case: only function definitions *)
         let (clos, infos) = close_functions fenv cenv defs in
+        if !Clflags.dump_rawlambda then
+          eprintf "@[Lletrec(clos):@ params: %a@]@."
+            (fun ppf -> (function
+                 | Uclosure (fs, vars) ->
+                     fprintf ppf "@[params: %a@]"
+                       (fun ppf -> List.iter (fun f ->
+                            fprintf ppf "[%a]@ "
+                              (fun ppf -> List.iter (fun id ->
+                                   fprintf ppf "%a@ " Ident.print id))
+                              f.params))
+                       fs;
+                     fprintf ppf "@[clos_vars: %a@]"
+                       (fun ppf -> List.iter (fun ulam ->
+                            fprintf ppf "%a@ " Printclambda.clambda ulam))
+                       vars
+                 | _ -> failwith "close_functions dint't return a Uclosure"))
+            clos;
         let clos_ident = Ident.create "clos" in
         let fenv_body =
           List.fold_right
             (fun (id, pos, approx) fenv -> Tbl.add id approx fenv)
             infos fenv in
+        if !Clflags.dump_rawlambda then
+          eprintf "@[%a@]@."
+            (fun ppf -> Tbl.iter (fun id approx ->
+                 fprintf ppf "%a: %a@ "
+                   Ident.print id Printclambda.approx approx)) fenv_body;
         let (ubody, approx) = close fenv_body cenv body in
         let sb =
           List.fold_right
             (fun (id, pos, approx) sb ->
                Tbl.add id (Uoffset(Uvar clos_ident, pos)) sb)
             infos Tbl.empty in
+        if !Clflags.dump_rawlambda then
+          eprintf "@[Lletrec(clos_ident):@ sb:@ %a@]@."
+            (fun ppf -> Tbl.iter (fun id ulam ->
+                 fprintf ppf "%a: %a@ "
+                   Ident.print id Printclambda.clambda ulam)) sb;
         (Ulet(clos_ident, clos, substitute !Clflags.float_const_prop sb ubody),
          approx)
       end else begin
@@ -1203,10 +1228,15 @@ let rec close fenv cenv = function
                               | _ -> fatal_error "Closure.close(cenv_fv)")
           !cenv_fv_ref in
       let (body', splices) = collect_splices body in
-      let pr fmt = List.iter (fun l -> eprintf "%a" Printlambda.lambda l) in
+      if !Clflags.dump_rawlambda then
+          eprintf "@[Closure.close(Lcode): ufunct.params: %a@]@."
+          (fun ppf -> List.iter (fun id -> fprintf ppf "%a@ " Ident.print id))
+          ufunct.params;
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lcode):@ body':@ %a@ splices: %a@]@."
-          Printlambda.lambda body' pr splices;
+          Printlambda.lambda body'
+          (fun ppf -> List.iter (fun l -> fprintf ppf "%a " Printlambda.lambda l))
+          splices;
       let (usplices, _) = List.map (close fenv cenv) splices |> List.split in
       let dummy = Lfunction (Curried, [Ident.create "dummy"], lambda_unit) in
       let (udummy, _) =
@@ -1223,7 +1253,8 @@ let rec close fenv cenv = function
           Tbl.iter (fun id pos -> fprintf ppf "%a: %d@,"
                        Ident.print id pos) tbl in
         match tbl with
-        | Some (_, tbl) -> fprintf ppf "@[%a@]@." pr tbl
+        | Some (ep, tbl) ->
+            fprintf ppf "@[%a::@ %a@]@." Ident.print ep pr tbl
         | None -> () in
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lcode):@ uc_offsets@ %a@]@." pr_tbl uc_offsets;
@@ -1231,10 +1262,6 @@ let rec close fenv cenv = function
                          uc_function=udummy;
                          uc_cvars=uclos_vars;
                          uc_offsets;
-                         (* no need to get [fenv_rec] out of [close_functions] ([close_one_function])
-                            since [fenv_rec] is built from [fenv] by adding to
-                            [fenv] only the [Value_closure]... entries for function(s)
-                            that are bound by the [let rec] that is being closure-converted *)
                          uc_marshalled_fenv = Marshal.to_string fenv []} in
         (Uprim(Prebuild, [ucode], Debuginfo.none), Value_unknown)
   | Lrun ({lc_code; lc_offsets; lc_marshalled_fenv; lc_block} as cd) ->
@@ -1564,6 +1591,8 @@ and close_functions ?cenv_fv_ref fenv cenv fun_defs =
   let fenv_rec =
     List.fold_right
       (fun (id, params, body, fundesc) fenv ->
+         if !Clflags.dump_rawlambda then
+           eprintf "@[%a@ @]" Ident.print id;
          Tbl.add id (Value_closure(fundesc, Value_unknown)) fenv)
       uncurried_defs fenv in
   (* Determine the offsets of each function's closure in the shared block *)
@@ -1585,6 +1614,8 @@ and close_functions ?cenv_fv_ref fenv cenv fun_defs =
       | Levent (_,({lev_kind=Lev_function} as ev)) -> Debuginfo.from_call ev
       | _ -> Debuginfo.none in
     let env_param = Ident.create "env" in
+    if !Clflags.dump_rawlambda then
+      eprintf "@[env_param: %a@]@." Ident.print env_param;
     let cenv_fv =
       build_closure_env env_param (fv_pos - env_pos) fv in
     let store_cenv = function
@@ -1593,6 +1624,10 @@ and close_functions ?cenv_fv_ref fenv cenv fun_defs =
     let cenv_body =
       List.fold_right2
         (fun (id, params, body, fundesc) pos env ->
+           if !Clflags.dump_rawlambda then
+             eprintf
+               "@[close_functions(cenv_body):@ id: %a@ pos: %d@ env_pos: %d@]@."
+               Ident.print id pos env_pos;
            Tbl.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
     let (ubody, approx) = close fenv_rec cenv_body body in
@@ -1650,6 +1685,9 @@ and close_functions ?cenv_fv_ref fenv cenv fun_defs =
      with offsets and approximations. *)
   let (clos, infos) = List.split clos_info_list in
   let fv = if !useless_env then [] else fv in
+  if !Clflags.dump_rawlambda then
+    eprintf "@[close_functions:@ fv:@ [%a]@]@."
+      (fun ppf -> List.iter (fun v -> fprintf ppf "%a;@ " Ident.print v)) fv;
   (Uclosure(clos, List.map (close_var fenv cenv) fv), infos)
 
 (* Same, for one non-recursive function *)

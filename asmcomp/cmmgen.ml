@@ -21,6 +21,7 @@ open Lambda
 open Clambda
 open Cmm
 open Cmx_format
+open Format
 
 (* Local binding of complex expressions *)
 
@@ -1300,6 +1301,12 @@ let rec transl = function
       let lbl = Compilenv.new_const_symbol() in
       constant_closures := (lbl, fundecls) :: !constant_closures;
       List.iter (fun f -> Queue.add f functions) fundecls;
+      if !Clflags.dump_rawlambda then
+        eprintf
+          "@[Cmmgen.transl(Uclosure/constant_closures):@ [%a]@]@."
+          (fun ppf -> List.iter (fun f ->
+               fprintf ppf "%s@ " f.Clambda.label))
+          fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
       let block_size =
@@ -1308,6 +1315,10 @@ let rec transl = function
           [] ->
             List.map transl clos_vars
         | f :: rem ->
+            if !Clflags.dump_rawlambda then
+              eprintf
+                "@[Cmmgen.transl(Uclosure/transl_fundecls):@ f.label: %s@]@."
+                f.Clambda.label;
             Queue.add f functions;
             let header =
               if pos = 0

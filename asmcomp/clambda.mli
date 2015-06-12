@@ -73,6 +73,7 @@ and ulambda_switch =
     us_index_blocks: int array;
     us_actions_blocks: ulambda array}
 
+(* this is the Clambda counterpart to [Lambda.lc_code] *)
 and ucode_description =
   { uc_code: lambda;
     uc_splices : ulambda list;

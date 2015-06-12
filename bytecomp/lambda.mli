@@ -240,7 +240,8 @@ and code_description = { (* Information for [run] *)
   lc_splices_count : int;
   (* don't strictly need this, but it does make unmarshalling splices simpler *)
   lc_splices : code_description list;
-  (* The array of splices for this piece of code (if any)*)}
+  (* The list of splices for this piece of code (if any)*)}
+
 
 (* Sharing key *)
 val make_key: lambda -> lambda option

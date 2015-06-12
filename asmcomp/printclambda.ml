@@ -152,13 +152,16 @@ let rec lam ppf = function
         else if k = Lambda.Cached then "cache"
         else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
-  | Ucode {uc_code;uc_function;_} ->
-    fprintf ppf "@[<2>(code %a; fun: %a)@]" Printlambda.lambda uc_code one_fun uc_function
+  | Ucode {uc_code;uc_function;uc_splices; _} ->
+      fprintf ppf "@[<2>(code %a;@ splices: [%a]@ fun: %a)@]"
+        Printlambda.lambda uc_code
+        (fun ppf -> List.iter (fun ul -> fprintf ppf "%a;@ " lam ul)) uc_splices
+        one_fun uc_function
   | Urun (uf, clos_vars) ->
     let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
     fprintf ppf "@[<2>(run@ %a@ (vars at: %#x))@]" one_fun uf (val_of_int (Obj.obj clos_vars))
-  | Uescape _ -> failwith "Uescape printing not (yet) implemented"
-  | Usplice _ -> failwith "Usplice printing not (yet) implemented"
+  | Uescape ul -> fprintf ppf "@[<2>%a@]" lam ul
+  | Usplice n -> fprintf ppf "@[<2>(splice: %d)@]" n
 
 and sequence ppf ulam = match ulam with
   | Usequence(l1, l2) ->

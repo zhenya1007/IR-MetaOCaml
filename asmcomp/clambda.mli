@@ -77,7 +77,6 @@ and ulambda_switch =
 and ucode_description =
   { uc_code: lambda;
     uc_splices : ulambda list;
-    uc_function: ufunction;
     uc_cvars: ulambda list;
     uc_offsets: (Ident.t * (Ident.t, int) Tbl.t) option;
     uc_marshalled_fenv: string;}

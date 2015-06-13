@@ -16,3 +16,4 @@ open Format
 val clambda: formatter -> ulambda -> unit
 val approx: formatter -> value_approximation -> unit
 val structured_constant: formatter -> ustructured_constant -> unit
+val ucode_description: formatter -> ucode_description -> unit

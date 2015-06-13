@@ -413,7 +413,7 @@ and code_description ppf {lc_code; lc_offsets; lc_block; _} =
                  Ident.print id pos pr_field pos) tbl in
   let pr_tbl ppf = function
     | Some (id, tbl) -> fprintf ppf "@[%a::@ %a@]" Ident.print id pr tbl
-    | None -> () in
+    | None -> fprintf ppf "(empty env)" in
   fprintf ppf "@[%a@ %a@]" lam lc_code pr_tbl lc_offsets
 
 

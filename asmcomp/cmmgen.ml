@@ -1383,7 +1383,7 @@ let rec transl = function
       end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
-  | Ucode{uc_code; uc_splices; uc_function; uc_cvars; uc_offsets; uc_marshalled_fenv} ->
+  | Ucode{uc_code; uc_splices; uc_cvars; uc_offsets; uc_marshalled_fenv} ->
       let lc = {Lambda.lc_code=uc_code;
                 lc_offsets=uc_offsets;
                 lc_marshalled_fenv = uc_marshalled_fenv;
@@ -1395,16 +1395,17 @@ let rec transl = function
       (* unfolding transl_structured_constant *)
       let lbl = Compilenv.new_structured_constant b ~shared:false in
       (* essentially copied from the Uclosure case, and modified *)
-      let sz = fundecls_size [uc_function] in
-      let block_size = sz + List.length uc_cvars + List.length uc_splices + 1 in
+      let block_size = 2 + List.length uc_cvars + List.length uc_splices + 1 in
+      (* magic numbers:
+         2: header + pointer to function (which is just zero)
+         1: pointer to marshalled code *)
       let header = alloc_closure_header block_size in
       let heap_block =
         header ::
-        Cconst_symbol uc_function.label
+        Cconst_pointer 0
         :: int_const 1
         :: (List.map transl uc_cvars)
         @ (List.map transl uc_splices) @ [Cconst_symbol lbl] in
-      Queue.add uc_function functions;
       Cop(Calloc, heap_block)
   | Urun(uf, block) ->
       let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)

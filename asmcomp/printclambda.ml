@@ -152,11 +152,8 @@ let rec lam ppf = function
         else if k = Lambda.Cached then "cache"
         else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
-  | Ucode {uc_code;uc_function;uc_splices; _} ->
-      fprintf ppf "@[<2>(code %a;@ splices: [%a]@ fun: %a)@]"
-        Printlambda.lambda uc_code
-        (fun ppf -> List.iter (fun ul -> fprintf ppf "%a;@ " lam ul)) uc_splices
-        one_fun uc_function
+  | Ucode ucd ->
+      ucode_description ppf ucd
   | Urun (uf, clos_vars) ->
     let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
     fprintf ppf "@[<2>(run@ %a@ (vars at: %#x))@]" one_fun uf (val_of_int (Obj.obj clos_vars))
@@ -174,6 +171,17 @@ and idents ppf =
 and one_fun ppf f =
   fprintf ppf "@[<2>(fun@ %s@ %d @[<2>%a@]@ @[<2>%a@]@])"
     f.label f.arity idents f.params lam f.body
+
+and ucode_description ppf {uc_code; uc_splices; uc_cvars; uc_offsets; _} =
+  let ulams ppf = List.iter (fun ul -> fprintf ppf "%a;@ " lam ul) in
+  let pr ppf tbl =
+    Tbl.iter (fun id pos -> fprintf ppf "@[%a: %d@]"
+                 Ident.print id pos) tbl in
+  let pr_tbl ppf = function
+    | Some (id, tbl) -> fprintf ppf "@[%a::@ %a@]" Ident.print id pr tbl
+    | None -> fprintf ppf "(empty env)" in
+  fprintf ppf "@[<2>(code %a;@ splices: [%a];@ cvars:[%a];@ offsets: %a)@]"
+    Printlambda.lambda uc_code ulams uc_splices ulams uc_cvars pr_tbl uc_offsets
 
 let clambda ppf ulam =
   fprintf ppf "%a@." lam ulam

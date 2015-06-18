@@ -2704,18 +2704,27 @@ and type_expect_ ?in_function env sexp ty_expected =
     exp_env = env;
     }
   | Pexp_escape e ->
-    let arg = type_exp env e in
-    let ty = match arg.exp_type with
-    | { desc = Tconstr(p, [ty], _); level = _; id = _ }
-        when Path.same Predef.path_code p -> ty
-    | _ -> fatal_error "Wrong type of argument to Run." in
-    rue {
-    exp_desc = Texp_escape arg;
-    exp_loc = loc; exp_extra = [];
-    exp_type = ty;
-    exp_attributes = sexp.pexp_attributes;
-    exp_env = env;
-    }
+      let arg = type_exp env e in
+      if !Clflags.dump_rawlambda then
+        Format.eprintf "@[Typecore(Pexp_escape):@ arg.exp_type: %a@]@."
+          Printtyp.raw_type_expr arg.exp_type;
+      let ty = match arg.exp_type with
+        | { desc = Tconstr(p, [ty], _); level = _; id = _ }
+          when Path.same Predef.path_code p -> ty
+        | _ ->
+            let ty = newgenvar () in
+            unify_exp_types loc env ty ty_expected;
+            if !Clflags.dump_rawlambda then
+              Format.eprintf "@[Typecore(Pexp_escape):@ ty: %a@]@."
+                Printtyp.raw_type_expr ty;
+            ty in
+      rue {
+        exp_desc = Texp_escape arg;
+        exp_loc = loc; exp_extra = [];
+        exp_type = ty;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env;
+      }
 
 and type_function ?in_function loc attrs env ty_expected l caselist =
   let (loc_fun, ty_fun) =

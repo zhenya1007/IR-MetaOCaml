@@ -67,6 +67,14 @@ type structured_constants
 val snapshot: unit -> structured_constants
 val backtrack: structured_constants -> unit
 
+val covers_size: unit -> int
+  (* the total number of entries in the "covers" table *)
+val record_cover_offset: Ident.t -> unit
+  (* record_cover_offset id: record a need to "cover" [id]*)
+val cover_offset: Ident.t -> int
+  (* cover_offset id: return the offset (a non-negative integer)
+     of slot for [id] in the "covers" table;
+     if [id] is not found in the "covers" table, return -1 *)
 
 val read_unit_info: string -> unit_infos * Digest.t
         (* Read infos and MD5 from a [.cmx] file. *)

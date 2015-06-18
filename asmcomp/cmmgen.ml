@@ -2371,6 +2371,18 @@ let emit_all_constants cont =
   constant_closures := [];
   !c
 
+(* mostly copied from the definition of [space]
+   in [compunit] (just below) *)
+let emit_covers size =
+    let space =
+    Array.to_list
+      (Array.init size (fun _index ->
+           Cint (Nativeint.of_int 1 (* Val_unit *)))) in
+    let nm = "covers" in
+    if !Clflags.dump_rawlambda then
+      eprintf "@[Covers symbol name: %s@]@." nm;
+    [Cdata ((Cdefine_symbol nm)::space)]
+
 (* Translate a compilation unit *)
 
 let compunit size ulam =
@@ -2393,7 +2405,8 @@ let compunit size ulam =
   in
   Cdata ([Cint(black_block_header 0 size);
           Cglobal_symbol glob;
-          Cdefine_symbol glob] @ space) :: c3
+          Cdefine_symbol glob] @ space)
+  :: c3  @ (emit_covers (Compilenv.covers_size ()))
 
 
 (*

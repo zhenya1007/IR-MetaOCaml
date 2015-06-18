@@ -102,9 +102,16 @@ let occurs_var var u =
     | Uassign(id, u) -> id = var || occurs u
     | Usend(_, met, obj, args, _) ->
         occurs met || occurs obj || List.exists occurs args
-    | Ucode _ -> false (* FIXME: a bit of a kludge for now *)
-    | Urun _ -> false
-    | Uescape _ -> false
+    | Ucode {uc_splices; uc_cvars; _} ->
+        let f () =
+          try
+            List.iter (fun sp -> if occurs sp then raise Exit) uc_splices;
+            List.iter (fun cv -> if occurs cv then raise Exit) uc_cvars;
+            false
+          with Exit -> true in
+        f ()
+    | Urun (uf, _) -> false
+    | Uescape u -> occurs u
     | Usplice _ -> false
   and occurs_array a =
     try
@@ -778,9 +785,154 @@ let collect_splices l =
     | Lrebuild ({lc_code; _} as lc) ->
         let (lc_code', a') = f (l, a) lc_code in
         (Lrebuild {lc with lc_code = lc_code';}, a')
-    | Lsplice _ -> failwith "Clambda.close(Lcode/Lsplice)" in
+    | Lsplice _ -> failwith "Closure.close(Lcode/Lsplice)" in
   let (lam, splices) = f (Lambda.lambda_unit, []) l in
   (lam, List.rev splices)
+
+let collect_cover_vars ul =
+  let rec const = function
+    | Uconst_ref (s, c) ->
+        Uconst_ref (s, structured_constant c)
+    | (Uconst_int _ | Uconst_ptr _) as c -> c
+  and structured_constant = function
+    | Uconst_block (a, ul) ->
+        Uconst_block (a, List.map const ul)
+    | (Uconst_float _ | Uconst_int32 _
+    | Uconst_int64 _ | Uconst_nativeint _
+    | Uconst_float_array _ | Uconst_string _) as c -> c
+  and ulam = function
+    | (Uvar _) as v -> v
+    | Uconst c -> Uconst (const c)
+    | Udirect_apply (a, ul, b) ->
+        Udirect_apply (a, List.map ulam ul, b)
+    | Ugeneric_apply (u, ul, a) ->
+        Ugeneric_apply (ulam u, List.map ulam ul, a)
+    | Uclosure (fl, ul) ->
+        let fl' = List.map (fun f -> {f with body = ulam f.body}) fl in
+        let ul' = List.map (function
+            | Uvar id ->
+                let i = Compilenv.covers_size () in
+                Compilenv.record_cover_offset id;
+                Uprim (Pfield i, [getglobal (Ident.create "covers")], Debuginfo.none)
+            | u -> u)
+            ul in
+        Uclosure(fl', ul')
+    | Uoffset(u, a) -> Uoffset(ulam u, a)
+    | Ulet (a, u1, u2) ->
+        Ulet(a, ulam u1, ulam u2)
+    | Uletrec (l, u) ->
+        Uletrec (List.map (fun (id, u) -> (id, ulam u)) l, ulam u)
+    | Uprim (a, ul, b) ->
+        Uprim(a, List.map ulam ul, b)
+    | Uswitch (u, sl) ->
+        Uswitch(ulam u,
+                {sl with us_actions_consts = Array.map ulam sl.us_actions_consts;
+                         us_actions_blocks = Array.map ulam sl.us_actions_blocks})
+    | Ustringswitch (u,sw,d) ->
+        Ustringswitch (ulam u,
+                       List.map (fun (a,act) -> (a, ulam act)) sw,
+                       Misc.may_map ulam d)
+    | Ustaticfail (a, ul) ->
+        Ustaticfail(a, List.map ulam ul)
+    | Ucatch (a, b, u1, u2) ->
+        Ucatch (a, b, ulam u1, ulam u2)
+    | Utrywith (u1, a, u2) ->
+        Utrywith(ulam u1, a, ulam u2)
+    | Usequence (u1, u2) ->
+        Usequence (ulam u1, ulam u2)
+    | Uwhile (u1, u2)  ->
+        Uwhile (ulam u1, ulam u2)
+    | Uifthenelse (u1, u2, u3) ->
+        Uifthenelse (ulam u1, ulam u2, ulam u3)
+    | Ufor (a, u1, u2, b, u3) ->
+        Ufor(a, ulam u1, ulam u2, b, ulam u3)
+    | Uassign (id, u) ->
+        Uassign (id, ulam u)
+    | Usend (a, u1, u2, ul, b) ->
+        Usend (a, ulam u1, ulam u2, List.map ulam ul, b)
+    | Ucode ({uc_splices; uc_cvars; _} as cd) ->
+        Ucode {cd with uc_splices = List.map ulam uc_splices;
+                       uc_cvars = List.map ulam uc_cvars}
+    | Uescape ul -> Uescape (ulam ul)
+    | (Urun _ |  Usplice _) as ul -> ul
+  in
+  ulam ul
+
+let rec adjust_functions sym lam =
+  let adj = adjust_functions sym in
+  let adj_opt = function
+    | Some l -> Some (adj l)
+    | None -> None in
+  match lam with
+    Lvar _ as v -> v
+  | Lconst _ as c -> c
+  | Lapply(fn, args, t) ->
+      Lapply (adj fn,  List.map adj args, t)
+  | Lfunction(kind, params, body) ->
+      let assign_to_cover i param =
+        (*copied-and-pasted from [getglobal]*)
+        let gg id =
+          Lprim(Pgetglobal
+                  (Ident.create_persistent (Compilenv.symbol_for_global id)),
+                []) in
+        Lprim (Psetfield(i, true),
+               [gg (Ident.create "covers"); Lvar param]) in
+      let rec cover params cont = match params with
+          [] -> cont
+        | p::lst ->
+            let i = Compilenv.cover_offset p in
+            if i <> -1 then
+              Lsequence (assign_to_cover i p, cover lst cont)
+            else
+              cover lst cont in
+      let cont = adj body in
+      Lfunction(kind, params, cover params cont)
+  | Llet(str, id, arg, body) ->
+      Llet(str, id, adj arg, adj body)
+  | Lletrec(decl, body) ->
+      Lletrec(List.map (fun (id, exp) -> (id, adj exp)) decl,
+              adj body)
+  | Lprim(p, args) ->
+      Lprim(p, List.map adj args)
+  | Lswitch(arg, sw) ->
+      let sw_consts' = List.map (fun (key, case) -> (key, adj case)) sw.sw_consts
+      and sw_blocks' = List.map (fun (key, case) -> (key, adj case)) sw.sw_blocks in
+      Lswitch (adj arg,
+               {sw with Lambda.sw_consts = sw_consts';
+                        sw_blocks = sw_blocks';
+                        sw_failaction = adj_opt sw.sw_failaction})
+  | Lstringswitch (arg,cases,default) ->
+      Lstringswitch (adj arg,
+                     List.map (fun (id, act) -> (id, adj act)) cases,
+                     adj_opt default)
+  | Lstaticraise (t,args) ->
+      Lstaticraise (t, List.map adj args)
+  | Lstaticcatch(e1, t, e2) ->
+      Lstaticcatch(adj e1, t, adj e2)
+  | Ltrywith(e1, exn, e2) ->
+      Ltrywith(adj e1, exn, adj e2)
+  | Lifthenelse(e1, e2, e3) ->
+      Lifthenelse(adj e1, adj e2, adj e3)
+  | Lsequence(e1, e2) ->
+      Lsequence (adj e1, adj e2)
+  | Lwhile(e1, e2) ->
+      Lwhile (adj e1, adj e2)
+  | Lfor(v, e1, e2, dir, e3) ->
+      Lfor (v, adj e1, adj e2, dir, adj e3)
+  | Lassign(id, e) ->
+      Lassign(id, adj e)
+  | Lsend (k, met, obj, args, t) ->
+      Lsend (k, adj met, adj obj, List.map adj args, t)
+  | Levent (lam, evt) ->
+      Levent (adj lam, evt)
+  | Lifused (v, e) ->
+      Lifused (v, adj e)
+  | Lcode e ->
+      Lcode (adj e)
+  | Lrun lc as r -> r
+  | Lescape (n, e) -> Lescape(n, adj e)
+  | Lrebuild lc as r -> r
+  | Lsplice lc as s -> s
 
 (* Perform an inline expansion *)
 
@@ -1238,7 +1390,11 @@ let rec close fenv cenv = function
       let cvars = List.filter
           (fun v -> if Tbl.mem v fenv then
               match Tbl.find v fenv with
-              | Value_closure (_, Value_unknown) -> false
+              | (Value_closure (_, Value_unknown) as approx) ->
+                  if !Clflags.dump_rawlambda then
+                    eprintf "@[Closure.close(Lcode):@ approx@ %a@]@."
+                      Printclambda.approx approx;
+                  false
               | _ -> true
             else true)
           free_vars in
@@ -1249,6 +1405,16 @@ let rec close fenv cenv = function
                 (fun (pos, tbl) id -> (pos+1, Tbl.add id pos tbl))
                 (2,Tbl.empty) cvars in
             Some(Ident.create "env", offsets) in
+      if !Clflags.dump_rawlambda then
+        eprintf "@[Closure.close(Lcode):@ fenv: [%a]@]@."
+          (fun ppf -> Tbl.iter (fun id a -> eprintf "%a: %a;@ "
+                                   Ident.print id Printclambda.approx a))
+          fenv;
+      if !Clflags.dump_rawlambda then
+        eprintf "@[Closure.close(Lcode):@ cenv: [%a]@]@."
+          (fun ppf -> Tbl.iter (fun id u -> eprintf "%a: %a;@ "
+                                   Ident.print id Printclambda.clambda u))
+          cenv;
       let (uc_cvars, _) = List.map (fun id -> Lvar id) cvars
                           |> List.map (close fenv cenv)
                           |> List.split in
@@ -1264,12 +1430,25 @@ let rec close fenv cenv = function
           (fun ppf -> List.iter (fun l -> fprintf ppf "%a " Printlambda.lambda l))
           splices;
       let (usplices, _) = List.map (close fenv cenv) splices |> List.split in
-      let ucode = Ucode {uc_code=body';
-                         uc_splices = usplices;
-                         uc_cvars;
-                         uc_offsets;
-                         uc_marshalled_fenv = Marshal.to_string fenv []} in
-        (Uprim(Prebuild, [ucode], Debuginfo.none), Value_unknown)
+      let adjust_ucode = function
+        | Ucode {uc_code; uc_splices; uc_cvars;
+                 uc_offsets; uc_marshalled_fenv} as uc ->
+            let adj_fun = function
+              | Ucode ({uc_code; uc_splices; uc_cvars;
+                        uc_offsets; uc_marshalled_fenv} as cd) ->
+                  let sym = Ident.create_persistent "covers" in
+                  Ucode {cd with uc_code = adjust_functions sym uc_code}
+              | _ -> failwith "Closure.close(Lcode/adj_fun): argument not Ucode" in
+            let uc' = collect_cover_vars uc in
+            adj_fun uc'
+        | _ -> failwith "Closure.close(Lcode): argument not Ucode" in
+      let ucode = adjust_ucode (Ucode {uc_code= body';
+                                       uc_splices = usplices;
+                                       uc_cvars;
+                                       uc_offsets;
+                                       uc_marshalled_fenv
+                                       = Marshal.to_string fenv []}) in
+      (Uprim(Prebuild, [ucode], Debuginfo.none), Value_unknown)
   | Lrun ({lc_code; lc_offsets; lc_marshalled_fenv; lc_block} as cd) ->
       let pr_fenv ppf tbl =
         let pr ppf tbl =
@@ -1526,21 +1705,34 @@ let rec close fenv cenv = function
           (fun ppf usplices -> List.iter (fun sp ->
                fprintf ppf "%a@ " Printclambda.clambda sp) usplices)
           usplices;
-      let ucd =  {uc_code=body'; uc_splices = usplices;
-                  uc_cvars=uc_cvars @ copy_instr;
-                  uc_offsets=lc_offsets';
-                  (* no need to get [fenv_rec] out of [close_functions] ([close_one_function])
-                     since [fenv_rec] is built from [fenv] by adding to
-                     [fenv] only the [Value_closure]... entries for function(s)
-                     that are bound by the [let rec] that is being closure-converted *)
-                  uc_marshalled_fenv = lc_marshalled_fenv} in
+      let adjust_ucode = function
+        | Ucode {uc_code; uc_splices; uc_cvars;
+                 uc_offsets; uc_marshalled_fenv} as uc ->
+            let adj_fun = function
+              | Ucode ({uc_code; uc_splices; uc_cvars;
+                        uc_offsets; uc_marshalled_fenv} as cd) ->
+                  let sym = Ident.create_persistent "covers" in
+                  Ucode {cd with uc_code = adjust_functions sym uc_code}
+              | _ -> failwith "Closure.close(Lcode/adj_fun): argument not Ucode" in
+            let uc' = collect_cover_vars uc in
+            adj_fun uc'
+        | _ -> failwith "Closure.close(Lcode): argument not Ucode" in
+      let ucode
+        = adjust_ucode (Ucode {uc_code=body'; uc_splices = usplices;
+                               uc_cvars=uc_cvars @ copy_instr;
+                               uc_offsets=lc_offsets';
+                               (* no need to get [fenv_rec] out of [close_functions] ([close_one_function])
+                                  since [fenv_rec] is built from [fenv] by adding to
+                                  [fenv] only the [Value_closure]... entries for function(s)
+                                  that are bound by the [let rec] that is being closure-converted *)
+                               uc_marshalled_fenv = lc_marshalled_fenv}) in
       if !Clflags.dump_rawlambda then
-        eprintf "@[Closure.close(Lrebuild)@ ucd: %a@]@."
-          Printclambda.ucode_description ucd;
+        eprintf "@[Closure.close(Lrebuild)@ ucode: %a@]@."
+          Printclambda.clambda ucode;
       if 0 < List.length usplices then
-        (Uprim(Prebuild, [Ucode ucd], Debuginfo.none), Value_unknown)
+        (Uprim(Prebuild, [ucode], Debuginfo.none), Value_unknown)
       else
-        (Ucode ucd, Value_unknown)
+        (ucode, Value_unknown)
   | Lsplice n -> (Usplice n, Value_unknown)
 
 and close_list fenv cenv = function
@@ -1606,7 +1798,7 @@ and close_functions ?cenv_fv_ref fenv cenv fun_defs =
     List.fold_right
       (fun (id, params, body, fundesc) fenv ->
          if !Clflags.dump_rawlambda then
-           eprintf "@[%a@ @]" Ident.print id;
+           eprintf "@[close_functions:@ added to fenv: %a@ @]@." Ident.print id;
          Tbl.add id (Value_closure(fundesc, Value_unknown)) fenv)
       uncurried_defs fenv in
   (* Determine the offsets of each function's closure in the shared block *)
@@ -1629,7 +1821,7 @@ and close_functions ?cenv_fv_ref fenv cenv fun_defs =
       | _ -> Debuginfo.none in
     let env_param = Ident.create "env" in
     if !Clflags.dump_rawlambda then
-      eprintf "@[env_param: %a@]@." Ident.print env_param;
+      eprintf "@[close_functions:@ env_param: %a@]@." Ident.print env_param;
     let cenv_fv =
       build_closure_env env_param (fv_pos - env_pos) fv in
     let store_cenv = function

@@ -210,6 +210,8 @@ type lambda =
                                     the escapes are marked with Lsplice (below) *)
   | Lsplice of int (* what escape turns into, after it's been through
                                    the compiler once*)
+  | Lcover of string  (* a kludge to let me express the notion of
+                         Cconst_symbol in the Lambda and Ulambda languages *)
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)

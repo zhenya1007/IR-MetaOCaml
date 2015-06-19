@@ -202,6 +202,8 @@ type lambda =
                                     the escapes are marked with Lsplice (below) *)
   | Lsplice of int (* what escape turns into, after it's been through
                                    the compiler once*)
+  | Lcover of string  (* a kludge to let me express the notion of
+                         Cconst_symbol in the Lambda and Ulambda languages *)
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
@@ -302,7 +304,7 @@ let make_key e =
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
     | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ | Lsplice _
     | Lletrec _|Lfunction _
-    | Lfor _ | Lwhile _
+    | Lfor _ | Lwhile _ | Lcover _
 (* Beware: (PR#6412) the event argument to Levent
    may include cyclic structure of type Type.typexpr *)
     | Levent _  ->
@@ -396,7 +398,7 @@ let iter f = function
   | Lescape (_, e) -> f e
   | Lrebuild {lc_code; _} -> f lc_code
   | Lsplice _ -> ()
-
+  | Lcover _ -> ()
 
 module IdentSet =
   Set.Make(struct
@@ -428,7 +430,7 @@ let free_ids get l =
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
     | Lifthenelse _ | Lsequence _ | Lwhile _
     | Lsend _ | Levent _ | Lifused _
-    | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ | Lsplice _ -> ()
+    | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ | Lsplice _ | Lcover _ -> ()
   in free l; !fv
 
 let free_variables l =
@@ -537,6 +539,7 @@ let subst_lambda s lam =
   | Lescape _ as e -> e
   | Lrebuild _ as e -> e
   | Lsplice _ as e -> e
+  | Lcover _ as c -> c
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
   and subst_strcase (key, case) = (key, subst case)

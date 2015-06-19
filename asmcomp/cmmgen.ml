@@ -1415,6 +1415,7 @@ let rec transl = function
               [get_field clos 0; Cconst_int 0; Cconst_pointer (val_of_int (Obj.obj block))]))
   | Uescape _ -> failwith "Uescape seen outside of a .<code>. block"
   | Usplice _ -> failwith "Usplice seen outside of a .<code>. block"
+  | Ucover c -> Cconst_symbol c
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->

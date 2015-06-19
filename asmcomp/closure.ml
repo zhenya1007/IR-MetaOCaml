@@ -113,6 +113,7 @@ let occurs_var var u =
     | Urun (uf, _) -> false
     | Uescape u -> occurs u
     | Usplice _ -> false
+    | Ucover _ -> false
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do
@@ -257,7 +258,7 @@ let lambda_smaller lam threshold =
     | Usend(_, met, obj, args, _) ->
         size := !size + 8;
         lambda_size met; lambda_size obj; lambda_list_size args
-    | Ucode _ | Urun _ | Uescape _ | Usplice _
+    | Ucode _ | Urun _ | Uescape _ | Usplice _ | Ucover _
       -> raise Exit (* Copied from [Uclosure] case *)
   and lambda_list_size l = List.iter lambda_size l
   and lambda_array_size a = Array.iter lambda_size a in
@@ -663,6 +664,7 @@ let rec substitute fpc sb ulam =
   | Urun _ as r -> r
   | Uescape _ as e -> e
   | Usplice _ as s -> s
+  | Ucover _ as c -> c
 
 let collect_splices l =
   let f_opt f (l, a) = function
@@ -785,7 +787,8 @@ let collect_splices l =
     | Lrebuild ({lc_code; _} as lc) ->
         let (lc_code', a') = f (l, a) lc_code in
         (Lrebuild {lc with lc_code = lc_code';}, a')
-    | Lsplice _ -> failwith "Closure.close(Lcode/Lsplice)" in
+    | Lsplice _ -> failwith "Closure.close(Lcode/Lsplice)"
+    | Lcover _ -> failwith "Lcover" in
   let (lam, splices) = f (Lambda.lambda_unit, []) l in
   (lam, List.rev splices)
 
@@ -854,12 +857,12 @@ let collect_cover_vars ul =
         Ucode {cd with uc_splices = List.map ulam uc_splices;
                        uc_cvars = List.map ulam uc_cvars}
     | Uescape ul -> Uescape (ulam ul)
-    | (Urun _ |  Usplice _) as ul -> ul
+    | (Urun _ |  Usplice _ | Ucover _) as ul -> ul
   in
   ulam ul
 
-let rec adjust_functions sym lam =
-  let adj = adjust_functions sym in
+let rec adjust_functions lam =
+  let adj = adjust_functions in
   let adj_opt = function
     | Some l -> Some (adj l)
     | None -> None in
@@ -870,13 +873,8 @@ let rec adjust_functions sym lam =
       Lapply (adj fn,  List.map adj args, t)
   | Lfunction(kind, params, body) ->
       let assign_to_cover i param =
-        (*copied-and-pasted from [getglobal]*)
-        let gg id =
-          Lprim(Pgetglobal
-                  (Ident.create_persistent (Compilenv.symbol_for_global id)),
-                []) in
-        Lprim (Psetfield(i, true),
-               [gg (Ident.create "covers"); Lvar param]) in
+        Lprim (Psetfield(i, false),
+               [Lcover "cover"; Lvar param]) in
       let rec cover params cont = match params with
           [] -> cont
         | p::lst ->
@@ -933,6 +931,7 @@ let rec adjust_functions sym lam =
   | Lescape (n, e) -> Lescape(n, adj e)
   | Lrebuild lc as r -> r
   | Lsplice lc as s -> s
+  | Lcover _ -> failwith "Lcover"
 
 (* Perform an inline expansion *)
 
@@ -1436,8 +1435,7 @@ let rec close fenv cenv = function
             let adj_fun = function
               | Ucode ({uc_code; uc_splices; uc_cvars;
                         uc_offsets; uc_marshalled_fenv} as cd) ->
-                  let sym = Ident.create_persistent "covers" in
-                  Ucode {cd with uc_code = adjust_functions sym uc_code}
+                  Ucode {cd with uc_code = adjust_functions uc_code}
               | _ -> failwith "Closure.close(Lcode/adj_fun): argument not Ucode" in
             let uc' = collect_cover_vars uc in
             adj_fun uc'
@@ -1634,7 +1632,8 @@ let rec close fenv cenv = function
                       eprintf "@[Closure.close(Lsplice(%d):@ %a)@]@."
                         n Printlambda.code_description cd;
                     lc_code in
-              sp (List.nth lc_splices n) in
+              sp (List.nth lc_splices n)
+          | Lcover _ -> failwith "Lcover" in
         f lam in
       let body = splice_in_code lc_code in
       if !Clflags.dump_rawlambda then
@@ -1711,8 +1710,7 @@ let rec close fenv cenv = function
             let adj_fun = function
               | Ucode ({uc_code; uc_splices; uc_cvars;
                         uc_offsets; uc_marshalled_fenv} as cd) ->
-                  let sym = Ident.create_persistent "covers" in
-                  Ucode {cd with uc_code = adjust_functions sym uc_code}
+                  Ucode {cd with uc_code = adjust_functions uc_code}
               | _ -> failwith "Closure.close(Lcode/adj_fun): argument not Ucode" in
             let uc' = collect_cover_vars uc in
             adj_fun uc'
@@ -1734,6 +1732,7 @@ let rec close fenv cenv = function
       else
         (ucode, Value_unknown)
   | Lsplice n -> (Usplice n, Value_unknown)
+  | Lcover _ -> failwith "Lcover"
 
 and close_list fenv cenv = function
     [] -> []
@@ -2006,7 +2005,7 @@ let collect_exported_structured_constants a =
     | Ufor (_, u1, u2, _, u3) -> ulam u1; ulam u2; ulam u3
     | Uassign (_, u) -> ulam u
     | Usend (_, u1, u2, ul, _) -> ulam u1; ulam u2; List.iter ulam ul
-    | Ucode _ | Urun _ | Uescape _ | Usplice _ -> ()
+    | Ucode _ | Urun _ | Uescape _ | Usplice _ | Ucover _ -> ()
   in
   approx a
 
@@ -2078,6 +2077,7 @@ let rec adjust_escape_level n lam =
   | Lescape (_, e) -> Lescape(n, adjust_escape_level (n-1) e)
   | Lrebuild lc as r -> r
   | Lsplice lc as s -> s
+  | Lcover _ -> failwith "Lcover"
 
 
 let intro size lam =

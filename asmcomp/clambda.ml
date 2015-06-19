@@ -57,6 +57,12 @@ type ulambda =
   | Urun of ufunction * Obj.t
   | Uescape of ulambda
   | Usplice of int
+  (* I really just want a Cconst_symbol -- but there is no way
+     (that I can see) to say that in the Ulambda language
+     (and it makes sense that there wouldn't be: the core OCaml
+     compiler doesn't need such a thing) *)
+  | Ucover of string
+
 
 and ufunction = {
   label  : function_label;

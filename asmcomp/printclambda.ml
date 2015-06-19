@@ -159,6 +159,7 @@ let rec lam ppf = function
     fprintf ppf "@[<2>(run@ %a@ (vars at: %#x))@]" one_fun uf (val_of_int (Obj.obj clos_vars))
   | Uescape ul -> fprintf ppf "@[<2>%a@]" lam ul
   | Usplice n -> fprintf ppf "@[<2>(splice: %d)@]" n
+  | Ucover c -> fprintf ppf "@[<2>(cover %s)@]" c
 
 and sequence ppf ulam = match ulam with
   | Usequence(l1, l2) ->

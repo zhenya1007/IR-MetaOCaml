@@ -1415,7 +1415,7 @@ let rec transl = function
               [get_field clos 0; Cconst_int 0; Cconst_pointer (val_of_int (Obj.obj block))]))
   | Uescape _ -> failwith "Uescape seen outside of a .<code>. block"
   | Usplice _ -> failwith "Usplice seen outside of a .<code>. block"
-  | Ucover c -> Cconst_symbol c
+  | Ucover c -> Cconst_symbol (Compilenv.make_symbol (Some c))
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->
@@ -2379,7 +2379,7 @@ let emit_covers size =
     Array.to_list
       (Array.init size (fun _index ->
            Cint (Nativeint.of_int 1 (* Val_unit *)))) in
-    let nm = "covers" in
+    let nm = Compilenv.make_symbol (Some "cover") in
     if !Clflags.dump_rawlambda then
       eprintf "@[Covers symbol name: %s@]@." nm;
     [Cdata ((Cdefine_symbol nm)::space)]

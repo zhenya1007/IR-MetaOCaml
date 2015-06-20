@@ -788,7 +788,7 @@ let collect_splices l =
         let (lc_code', a') = f (l, a) lc_code in
         (Lrebuild {lc with lc_code = lc_code';}, a')
     | Lsplice _ -> failwith "Closure.close(Lcode/Lsplice)"
-    | Lcover _ -> failwith "Lcover" in
+    | Lcover _ as l -> (l, a) in
   let (lam, splices) = f (Lambda.lambda_unit, []) l in
   (lam, List.rev splices)
 
@@ -816,7 +816,7 @@ let collect_cover_vars ul =
             | Uvar id ->
                 let i = Compilenv.covers_size () in
                 Compilenv.record_cover_offset id;
-                Uprim (Pfield i, [getglobal (Ident.create "covers")], Debuginfo.none)
+                Uprim (Pfield i, [Ucover "cover"], Debuginfo.none)
             | u -> u)
             ul in
         Uclosure(fl', ul')
@@ -931,7 +931,7 @@ let rec adjust_functions lam =
   | Lescape (n, e) -> Lescape(n, adj e)
   | Lrebuild lc as r -> r
   | Lsplice lc as s -> s
-  | Lcover _ -> failwith "Lcover"
+  | Lcover _ as c -> c
 
 (* Perform an inline expansion *)
 
@@ -1633,7 +1633,7 @@ let rec close fenv cenv = function
                         n Printlambda.code_description cd;
                     lc_code in
               sp (List.nth lc_splices n)
-          | Lcover _ -> failwith "Lcover" in
+          | Lcover _ as c -> c in
         f lam in
       let body = splice_in_code lc_code in
       if !Clflags.dump_rawlambda then
@@ -1732,7 +1732,7 @@ let rec close fenv cenv = function
       else
         (ucode, Value_unknown)
   | Lsplice n -> (Usplice n, Value_unknown)
-  | Lcover _ -> failwith "Lcover"
+  | Lcover c -> (Ucover c, Value_unknown)
 
 and close_list fenv cenv = function
     [] -> []
@@ -2076,8 +2076,8 @@ let rec adjust_escape_level n lam =
   | Lrun lc as r -> r
   | Lescape (_, e) -> Lescape(n, adjust_escape_level (n-1) e)
   | Lrebuild lc as r -> r
-  | Lsplice lc as s -> s
-  | Lcover _ -> failwith "Lcover"
+  | Lsplice _ as s -> s
+  | Lcover _ as c -> c
 
 
 let intro size lam =

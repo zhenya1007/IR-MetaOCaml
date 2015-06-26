@@ -155,8 +155,7 @@ let rec lam ppf = function
   | Ucode ucd ->
       ucode_description ppf ucd
   | Urun (uf, clos_vars) ->
-    let val_of_int i = i lsl 1 + 1 in (* c.f. Val_long macro in byterun/mlvalues.h *)
-    fprintf ppf "@[<2>(run@ %a@ (vars at: %#x))@]" one_fun uf (val_of_int (Obj.obj clos_vars))
+    fprintf ppf "@[<2>(run@ %a@ (vars at: %#x))@]" one_fun uf (Obj.obj clos_vars)
   | Uescape ul -> fprintf ppf "@[<2>%a@]" lam ul
   | Usplice n -> fprintf ppf "@[<2>(splice: %d)@]" n
   | Ucover c -> fprintf ppf "@[<2>(cover %s)@]" c

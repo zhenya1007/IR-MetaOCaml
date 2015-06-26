@@ -534,10 +534,10 @@ let subst_lambda s lam =
       Lsend (k, subst met, subst obj, List.map subst args, loc)
   | Levent (lam, evt) -> Levent (subst lam, evt)
   | Lifused (v, e) -> Lifused (v, subst e)
-  | Lcode _ as c -> c
-  | Lrun _ as uc -> uc
-  | Lescape _ as e -> e
-  | Lrebuild _ as e -> e
+  | Lcode e -> Lcode (subst e)
+  | Lrun cd -> Lrun (subst_code_description cd)
+  | Lescape (n, c) -> Lescape (n, subst c)
+  | Lrebuild cd -> Lrebuild (subst_code_description cd)
   | Lsplice _ as e -> e
   | Lcover _ as c -> c
   and subst_decl (id, exp) = (id, subst exp)
@@ -546,6 +546,10 @@ let subst_lambda s lam =
   and subst_opt = function
     | None -> None
     | Some e -> Some (subst e)
+  and subst_code_description = function
+    | {lc_code; lc_splices; _} as cd ->
+        {cd with lc_code = subst lc_code;
+                 lc_splices = List.map subst_code_description lc_splices}
   in subst lam
 
 

@@ -1384,6 +1384,8 @@ let rec transl = function
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
   | Ucode{uc_code; uc_splices; uc_cvars; uc_offsets; uc_marshalled_fenv} ->
+      if !Clflags.dump_rawlambda then
+        eprintf "@[Cmmgen(Ucode):@ uc_code: %a@]@." Printlambda.lambda uc_code;
       let lc = {Lambda.lc_code=uc_code;
                 lc_offsets=uc_offsets;
                 lc_marshalled_fenv = uc_marshalled_fenv;

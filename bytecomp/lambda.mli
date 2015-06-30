@@ -210,9 +210,6 @@ type lambda =
                                     the escapes are marked with Lsplice (below) *)
   | Lsplice of int (* what escape turns into, after it's been through
                                    the compiler once*)
-  | Lcover of string  (* a kludge to let me express the notion of
-                         Cconst_symbol in the Lambda and Ulambda languages *)
-
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
     sw_consts: (int * lambda) list;     (* Integer cases *)
@@ -242,7 +239,9 @@ and code_description = { (* Information for [run] *)
   lc_splices_count : int;
   (* don't strictly need this, but it does make unmarshalling splices simpler *)
   lc_splices : code_description list;
-  (* The list of splices for this piece of code (if any)*)}
+  (* The list of splices for this piece of code (if any)*)
+  lc_unbound_vars : Ident.t list;
+  (*List of idents that are free in this term after closure-conversion (if any)*)}
 
 
 (* Sharing key *)

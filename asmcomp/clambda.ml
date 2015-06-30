@@ -84,7 +84,8 @@ and ucode_description = {
   uc_splices : ulambda list;
   uc_cvars: ulambda list;
   uc_offsets: (Ident.t * (Ident.t, int) Tbl.t) option;
-  uc_marshalled_fenv: string;}
+  uc_marshalled_fenv: string;
+  uc_unbound_vars : Ident.t list;}
 
 (* Description of known functions *)
 

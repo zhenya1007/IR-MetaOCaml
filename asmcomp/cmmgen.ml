@@ -1383,7 +1383,8 @@ let rec transl = function
       end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
-  | Ucode{uc_code; uc_splices; uc_cvars; uc_offsets; uc_marshalled_fenv} ->
+  | Ucode{uc_code; uc_splices; uc_cvars; uc_offsets;
+          uc_marshalled_fenv; uc_unbound_vars} ->
       if !Clflags.dump_rawlambda then
         eprintf "@[Cmmgen(Ucode):@ uc_code: %a@]@." Printlambda.lambda uc_code;
       let lc = {Lambda.lc_code=uc_code;
@@ -1391,7 +1392,8 @@ let rec transl = function
                 lc_marshalled_fenv = uc_marshalled_fenv;
                 lc_block=None;
                 lc_splices_count = List.length uc_splices;
-                lc_splices = []} in
+                lc_splices = [];
+                lc_unbound_vars = uc_unbound_vars} in
       let s = Marshal.to_string lc [] in
       let b =  Uconst_string s in
       (* unfolding transl_structured_constant *)

@@ -787,153 +787,9 @@ let collect_splices l =
     | Lrebuild ({lc_code; _} as lc) ->
         let (lc_code', a') = f (l, a) lc_code in
         (Lrebuild {lc with lc_code = lc_code';}, a')
-    | Lsplice _ -> failwith "Closure.close(Lcode/Lsplice)"
-    | Lcover _ as l -> (l, a) in
+    | Lsplice _ -> failwith "Closure.close(Lcode/Lsplice)" in
   let (lam, splices) = f (Lambda.lambda_unit, []) l in
   (lam, List.rev splices)
-(*
-let collect_cover_vars ul =
-  let cover_vars = ref [] in
-  let rec const = function
-    | Uconst_ref (s, c) ->
-        Uconst_ref (s, structured_constant c)
-    | (Uconst_int _ | Uconst_ptr _) as c -> c
-  and structured_constant = function
-    | Uconst_block (a, ul) ->
-        Uconst_block (a, List.map const ul)
-    | (Uconst_float _ | Uconst_int32 _
-    | Uconst_int64 _ | Uconst_nativeint _
-    | Uconst_float_array _ | Uconst_string _) as c -> c
-  and ulam = function
-    | (Uvar _) as v -> v
-    | Uconst c -> Uconst (const c)
-    | Udirect_apply (a, ul, b) ->
-        Udirect_apply (a, List.map ulam ul, b)
-    | Ugeneric_apply (u, ul, a) ->
-        Ugeneric_apply (ulam u, List.map ulam ul, a)
-    | Uclosure (fl, ul) ->
-        let fl' = List.map (fun f -> {f with body = ulam f.body}) fl in
-        let ul' = List.map (function
-            | Uvar id ->
-                let i = Compilenv.covers_size () in
-                Compilenv.record_cover_offset id;
-                cover_vars := (id,i)::!cover_vars;
-                Uprim (Pfield i, [Ucover "cover"], Debuginfo.none)
-            | u -> u)
-            ul in
-        Uclosure(fl', ul')
-    | Uoffset(u, a) -> Uoffset(ulam u, a)
-    | Ulet (a, u1, u2) ->
-        Ulet(a, ulam u1, ulam u2)
-    | Uletrec (l, u) ->
-        Uletrec (List.map (fun (id, u) -> (id, ulam u)) l, ulam u)
-    | Uprim (a, ul, b) ->
-        Uprim(a, List.map ulam ul, b)
-    | Uswitch (u, sl) ->
-        Uswitch(ulam u,
-                {sl with us_actions_consts = Array.map ulam sl.us_actions_consts;
-                         us_actions_blocks = Array.map ulam sl.us_actions_blocks})
-    | Ustringswitch (u,sw,d) ->
-        Ustringswitch (ulam u,
-                       List.map (fun (a,act) -> (a, ulam act)) sw,
-                       Misc.may_map ulam d)
-    | Ustaticfail (a, ul) ->
-        Ustaticfail(a, List.map ulam ul)
-    | Ucatch (a, b, u1, u2) ->
-        Ucatch (a, b, ulam u1, ulam u2)
-    | Utrywith (u1, a, u2) ->
-        Utrywith(ulam u1, a, ulam u2)
-    | Usequence (u1, u2) ->
-        Usequence (ulam u1, ulam u2)
-    | Uwhile (u1, u2)  ->
-        Uwhile (ulam u1, ulam u2)
-    | Uifthenelse (u1, u2, u3) ->
-        Uifthenelse (ulam u1, ulam u2, ulam u3)
-    | Ufor (a, u1, u2, b, u3) ->
-        Ufor(a, ulam u1, ulam u2, b, ulam u3)
-    | Uassign (id, u) ->
-        Uassign (id, ulam u)
-    | Usend (a, u1, u2, ul, b) ->
-        Usend (a, ulam u1, ulam u2, List.map ulam ul, b)
-    | Ucode ({uc_splices; uc_cvars; _} as cd) ->
-        Ucode {cd with uc_splices = List.map ulam uc_splices;
-                       uc_cvars = List.map ulam uc_cvars}
-    | Uescape ul -> Uescape (ulam ul)
-    | (Urun _ |  Usplice _ | Ucover _) as ul -> ul
-  in
-  (ulam ul, !cover_vars)
-*)
-let rec adjust_functions lam =
-  let adj = adjust_functions  in
-  let adj_opt = function
-    | Some l -> Some (adj l)
-    | None -> None in
-  match lam with
-    Lvar _ as v -> v
-  | Lconst _ as c -> c
-  | Lapply(fn, args, t) ->
-      Lapply (adj fn,  List.map adj args, t)
-  | Lfunction(kind, params, body) ->
-      let assign_to_cover i param =
-        Lprim (Psetfield(i, false),
-               [Lcover "cover"; Lvar param]) in
-      let rec cover params cont = match params with
-          [] -> cont
-        | p::lst ->
-            let i = Compilenv.cover_offset p in
-            if i <> -1 then
-              Lsequence (assign_to_cover i p, cover lst cont)
-            else
-              cover lst cont in
-      let cont = adj body in
-      Lfunction(kind, params, cover params cont)
-  | Llet(str, id, arg, body) ->
-      Llet(str, id, adj arg, adj body)
-  | Lletrec(decl, body) ->
-      Lletrec(List.map (fun (id, exp) -> (id, adj exp)) decl,
-              adj body)
-  | Lprim(p, args) ->
-      Lprim(p, List.map adj args)
-  | Lswitch(arg, sw) ->
-      let sw_consts' = List.map (fun (key, case) -> (key, adj case)) sw.sw_consts
-      and sw_blocks' = List.map (fun (key, case) -> (key, adj case)) sw.sw_blocks in
-      Lswitch (adj arg,
-               {sw with Lambda.sw_consts = sw_consts';
-                        sw_blocks = sw_blocks';
-                        sw_failaction = adj_opt sw.sw_failaction})
-  | Lstringswitch (arg,cases,default) ->
-      Lstringswitch (adj arg,
-                     List.map (fun (id, act) -> (id, adj act)) cases,
-                     adj_opt default)
-  | Lstaticraise (t,args) ->
-      Lstaticraise (t, List.map adj args)
-  | Lstaticcatch(e1, t, e2) ->
-      Lstaticcatch(adj e1, t, adj e2)
-  | Ltrywith(e1, exn, e2) ->
-      Ltrywith(adj e1, exn, adj e2)
-  | Lifthenelse(e1, e2, e3) ->
-      Lifthenelse(adj e1, adj e2, adj e3)
-  | Lsequence(e1, e2) ->
-      Lsequence (adj e1, adj e2)
-  | Lwhile(e1, e2) ->
-      Lwhile (adj e1, adj e2)
-  | Lfor(v, e1, e2, dir, e3) ->
-      Lfor (v, adj e1, adj e2, dir, adj e3)
-  | Lassign(id, e) ->
-      Lassign(id, adj e)
-  | Lsend (k, met, obj, args, t) ->
-      Lsend (k, adj met, adj obj, List.map adj args, t)
-  | Levent (lam, evt) ->
-      Levent (adj lam, evt)
-  | Lifused (v, e) ->
-      Lifused (v, adj e)
-  | Lcode e ->
-      Lcode (adj e)
-  | Lrun lc as r -> r
-  | Lescape (n, e) -> Lescape(n, adj e)
-  | Lrebuild lc as r -> r
-  | Lsplice lc as s -> s
-  | Lcover _ as c -> c
 
 (* Perform an inline expansion *)
 
@@ -1620,8 +1476,7 @@ let rec close fenv cenv = function
                       eprintf "@[Closure.close(Lsplice(%d):@ %a)@]@."
                         n Printlambda.code_description cd;
                     lc_code in
-              sp (List.nth lc_splices n)
-          | Lcover _ as c -> c in
+              sp (List.nth lc_splices n) in
         f lam in
       let body = splice_in_code lc_code in
       if !Clflags.dump_rawlambda then
@@ -1717,7 +1572,6 @@ let rec close fenv cenv = function
       else
         (ucode, Value_unknown)
   | Lsplice n -> (Usplice n, Value_unknown)
-  | Lcover c -> (Ucover c, Value_unknown)
 
 and close_list fenv cenv = function
     [] -> []
@@ -2063,7 +1917,6 @@ let rec adjust_escape_level n lam =
   | Lescape (_, e) -> Lescape(n, adjust_escape_level (n-1) e)
   | Lrebuild lc as r -> r
   | Lsplice _ as s -> s
-  | Lcover _ as c -> c
 
 
 let intro size lam =

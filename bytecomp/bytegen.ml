@@ -835,7 +835,6 @@ let rec comp_expr env exp sz cont =
   | Lescape _ -> fatal_error "Lescape compilation not (yet) implemented."
   | Lsplice _ -> fatal_error "Lescape compilation not (yet) implemented."
   | Lrebuild _ -> fatal_error "Lescape compilation not (yet) implemented."
-  | Lcover _ -> fatal_error "Lcover compilation not (yet) implemented."
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
    The values of eN ... e2 are pushed on the stack, e2 at top of stack,

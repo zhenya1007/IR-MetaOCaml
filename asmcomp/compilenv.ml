@@ -35,28 +35,6 @@ module CstMap =
        because it compares "0.0" and "-0.0" equal. *)
   end)
 
-module CoversHtbl =
-  Hashtbl.Make(struct
-    type t = Ident.t
-    let equal = Ident.equal
-    let hash id = Hashtbl.hash (Ident.unique_name id)
-  end)
-
-let covers = (CoversHtbl.create 17 : int CoversHtbl.t)
-
-let covers_size () = CoversHtbl.length covers
-
-let record_cover_offset id =
-  Format.eprintf "@[Compilenv.record_cover_offset for %a@]@."
-    Ident.print id;
-  if CoversHtbl.mem covers id then ()
-  else CoversHtbl.add covers id (CoversHtbl.length covers)
-
-let cover_offset id =
-  try
-    CoversHtbl.find covers id
-  with Not_found -> -1
-
 type structured_constants =
   {
     strcst_shared: string CstMap.t;

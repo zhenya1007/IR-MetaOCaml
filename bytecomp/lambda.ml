@@ -430,7 +430,7 @@ let free_ids get l =
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
     | Lifthenelse _ | Lsequence _ | Lwhile _
     | Lsend _ | Levent _ | Lifused _
-    | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ | Lsplice _ ()
+    | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ | Lsplice _ -> ()
   in free l; !fv
 
 let free_variables l =

@@ -57,19 +57,13 @@ type ulambda =
   | Urun of ufunction * Obj.t
   | Uescape of ulambda
   | Usplice of int
-  (* I really just want a Cconst_symbol -- but there is no way
-     (that I can see) to say that in the Ulambda language
-     (and it makes sense that there wouldn't be: the core OCaml
-     compiler doesn't need such a thing) *)
-  | Ucover of string
-
+  | Ufreevar of Ident.t
 
 and ufunction = {
   label  : function_label;
   arity  : int;
   params : Ident.t list;
   body   : ulambda;
-  contains_escape : bool;
   dbg    : Debuginfo.t;
 }
 
@@ -84,8 +78,7 @@ and ucode_description = {
   uc_splices : ulambda list;
   uc_cvars: ulambda list;
   uc_offsets: (Ident.t * (Ident.t, int) Tbl.t) option;
-  uc_marshalled_fenv: string;
-  uc_unbound_vars : Ident.t list;}
+  uc_marshalled_fenv: string;}
 
 (* Description of known functions *)
 

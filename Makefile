@@ -277,11 +277,11 @@ opt.opt:
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
-	        $(OCAMLBUILDBYTE)
+                $(OCAMLBUILDBYTE)
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
-	        $(OCAMLBUILDNATIVE)
+                $(OCAMLBUILDNATIVE)
 
 base.opt:
 	$(MAKE) checkstack
@@ -440,7 +440,7 @@ partialclean::
 ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -I asmrun otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
 			asmrun/run_code.o \
-		           $(NATTOPOBJS:.cmo=.cmx) -linkall
+                           $(NATTOPOBJS:.cmo=.cmx) -linkall
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 
@@ -646,7 +646,7 @@ tools/cvt_emit: tools/cvt_emit.mll
 expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
          toplevel/expunge.cmo
 	$(CAMLC) $(LINKFLAGS) -o expunge compilerlibs/ocamlcommon.cma \
-	         compilerlibs/ocamlbytecomp.cma toplevel/expunge.cmo
+                 compilerlibs/ocamlbytecomp.cma toplevel/expunge.cmo
 
 partialclean::
 	rm -f expunge
@@ -809,7 +809,7 @@ alldepend::
 
 checkstack:
 	@if $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-	              -o tools/checkstack tools/checkstack.c; \
+                      -o tools/checkstack tools/checkstack.c; \
 	  then tools/checkstack; \
 	  else :; \
 	fi

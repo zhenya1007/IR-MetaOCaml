@@ -113,7 +113,7 @@ let occurs_var var u =
     | Urun (uf, _) -> false
     | Uescape u -> occurs u
     | Usplice _ -> false
-    | Ucover _ -> false
+    | Ufreevar _ -> false
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do
@@ -123,6 +123,161 @@ let occurs_var var u =
     with Exit ->
       true
   in occurs u
+
+let rec remove_var id u =
+  let rm = remove_var id in
+  let rec const = function
+    | Uconst_ref (s, c) ->
+        Uconst_ref (s, structured_constant c)
+    | (Uconst_int _ | Uconst_ptr _) as c -> c
+  and structured_constant = function
+    | Uconst_block (a, ul) ->
+        Uconst_block (a, List.map const ul)
+    | (Uconst_float _ | Uconst_int32 _
+    | Uconst_int64 _ | Uconst_nativeint _
+    | Uconst_float_array _ | Uconst_string _) as c -> c
+  and ulam = function
+    | Uvar _ as v -> v
+    | Uconst c -> Uconst (const c)
+    | Udirect_apply (a, ul, b) ->
+        Udirect_apply (a, List.map rm ul, b)
+    | Ugeneric_apply (u, ul, a) ->
+        Ugeneric_apply (rm u, List.map rm ul, a)
+    | Uclosure (fl, ul) ->
+        let fl' = List.fold_left (fun fl u ->
+            match u with
+            | Ufreevar id ->
+                List.map (fun uf -> {uf with body = remove_var id uf.body}) fl
+            | _ -> fl) fl ul in
+        Uclosure(fl', List.filter (function | Ufreevar _ -> false | _ -> true) ul)
+    | Uoffset(u, a) ->
+        Uoffset(rm u, a)
+    | Ulet (a, u1, u2) ->
+        Ulet (a, rm u1, rm u2)
+    | Uletrec (l, u) ->
+        Uletrec (List.map (fun (a, u) -> (a, rm u)) l, rm u)
+    | Uprim (a, ul, b) ->
+        Uprim (a, List.map rm ul, b)
+    | Uswitch (u, sl) ->
+        Uswitch (rm u,
+                 {sl with us_actions_consts = Array.map rm sl.us_actions_consts;
+                          us_actions_blocks = Array.map rm sl.us_actions_blocks;})
+    | Ustringswitch (u,sw,d) ->
+        Ustringswitch (rm u,
+                       List.map (fun (a,act) -> (a, rm act)) sw,
+                       Misc.may_map rm d)
+    | Ustaticfail (a, ul) ->
+        Ustaticfail (a, List.map rm ul)
+    | Ucatch (a, b, u1, u2) ->
+        Ucatch(a, b, rm u1, rm u2)
+    | Utrywith (u1, a, u2) ->
+        Utrywith (rm u1, a, rm u2)
+    | Usequence (u1, u2) ->
+        Usequence (rm u1, rm u2)
+    | Uwhile (u1, u2)  ->
+        Uwhile (rm u1, rm u2)
+    | Uifthenelse (u1, u2, u3) ->
+        Uifthenelse (rm u1, rm u2, rm u3)
+    | Ufor (a, u1, u2, b, u3) ->
+        Ufor(a, rm u1, rm u2, b, rm u3)
+    | Uassign (a, u) ->
+        Uassign (a, rm u)
+    | Usend (a, u1, u2, ul, b) ->
+        Usend(a, rm u1, rm u2, List.map rm ul, b)
+    | Ucode ucd ->
+        begin
+        match ucd.uc_offsets with
+        | None -> Ucode ucd
+        | Some (ep, tbl) ->
+            begin
+              let f = fun (ep, tbl) ->
+                let n = Tbl.fold (fun _ _ n -> n+1) tbl 0 in
+                if n = 0 then None
+                else Some (ep, tbl) in
+              try
+                let pos = Tbl.find id tbl in
+                Ucode {ucd with
+                       uc_cvars = List.filter
+                           (function | Uprim (Pfield n, _, _) when n = pos -> false
+                                     | _ -> true) ucd.uc_cvars;
+                       uc_offsets = f (ep, Tbl.remove id tbl);}
+              with Not_found -> Ucode ucd
+            end
+        end
+    | Urun (uf, obj)-> Urun ({uf with body = rm uf.body}, obj)
+    | Uescape u -> Uescape (rm u)
+    | Usplice _ as s-> s
+    | Ufreevar _ -> failwith "remove_var/Ufreevar 'this shouldn't happen'"
+  in
+  ulam u
+
+let remove_free_vars u =
+  let rec const = function
+    | Uconst_ref (s, c) ->
+        Uconst_ref(s, structured_constant c)
+    | (Uconst_int _ | Uconst_ptr _) as c -> c
+  and structured_constant = function
+    | Uconst_block (a, ul) ->
+        Uconst_block (a, List.map const ul)
+    | (Uconst_float _ | Uconst_int32 _
+    | Uconst_int64 _ | Uconst_nativeint _
+    | Uconst_float_array _ | Uconst_string _) as c -> c
+  and ulam = function
+    | Uvar _ as v -> v
+    | Uconst c -> Uconst (const c)
+    | Udirect_apply (a, ul, b) ->
+        Udirect_apply (a, List.map ulam ul, b)
+    | Ugeneric_apply (u, ul, a) ->
+        Ugeneric_apply (ulam u, List.map ulam ul, a)
+    | Uclosure (fl, ul) ->
+        let fl' = List.fold_left (fun fl u ->
+            match u with
+            | Ufreevar id ->
+                List.map (fun uf -> {uf with body = remove_var id uf.body}) fl
+            | _ -> fl) fl ul in
+        Uclosure(fl', List.filter (function | Ufreevar _ -> false | _ -> true) ul)
+    | Uoffset(u, a) ->
+        Uoffset(ulam u, a)
+    | Ulet (a, u1, u2) ->
+        Ulet (a, ulam u1, ulam u2)
+    | Uletrec (l, u) ->
+        Uletrec (List.map (fun (a, u) -> (a, ulam u)) l, ulam u)
+    | Uprim (a, ul, b) ->
+        Uprim (a, List.map ulam ul, b)
+    | Uswitch (u, sl) ->
+        Uswitch (ulam u,
+                 {sl with us_actions_consts = Array.map ulam sl.us_actions_consts;
+                          us_actions_blocks = Array.map ulam sl.us_actions_blocks;})
+    | Ustringswitch (u,sw,d) ->
+        Ustringswitch (ulam u,
+                       List.map (fun (a,act) -> (a, ulam act)) sw,
+                       Misc.may_map ulam d)
+    | Ustaticfail (a, ul) ->
+        Ustaticfail (a, List.map ulam ul)
+    | Ucatch (a, b, u1, u2) ->
+        Ucatch(a, b, ulam u1, ulam u2)
+    | Utrywith (u1, a, u2) ->
+        Utrywith (ulam u1, a, ulam u2)
+    | Usequence (u1, u2) ->
+        Usequence (ulam u1, ulam u2)
+    | Uwhile (u1, u2)  ->
+        Uwhile (ulam u1, ulam u2)
+    | Uifthenelse (u1, u2, u3) ->
+        Uifthenelse (ulam u1, ulam u2, ulam u3)
+    | Ufor (a, u1, u2, b, u3) ->
+        Ufor(a, ulam u1, ulam u2, b, ulam u3)
+    | Uassign (a, u) ->
+        Uassign (a, ulam u)
+    | Usend (a, u1, u2, ul, b) ->
+        Usend(a, ulam u1, ulam u2, List.map ulam ul, b)
+    | Ucode ucd -> Ucode ({ucd with uc_splices = List.map ulam ucd.uc_splices;
+                                    uc_cvars = List.map ulam ucd.uc_cvars;})
+    | Urun (uf, obj)-> Urun ({uf with body = ulam uf.body}, obj)
+    | Uescape u -> Uescape u
+    | Usplice _ as s-> s
+    | Ufreevar _ -> failwith "remove_free_var/Ufreevar 'this shouldn't happen'"
+  in
+  ulam u
 
 (* Split a function with default parameters into a wrapper and an
    inner function.  The wrapper fills in missing optional parameters
@@ -258,7 +413,7 @@ let lambda_smaller lam threshold =
     | Usend(_, met, obj, args, _) ->
         size := !size + 8;
         lambda_size met; lambda_size obj; lambda_list_size args
-    | Ucode _ | Urun _ | Uescape _ | Usplice _ | Ucover _
+    | Ucode _ | Urun _ | Uescape _ | Usplice _ | Ufreevar _
       -> raise Exit (* Copied from [Uclosure] case *)
   and lambda_list_size l = List.iter lambda_size l
   and lambda_array_size a = Array.iter lambda_size a in
@@ -664,9 +819,9 @@ let rec substitute fpc sb ulam =
   | Urun _ as r -> r
   | Uescape _ as e -> e
   | Usplice _ as s -> s
-  | Ucover _ as c -> c
+  | Ufreevar _ as c -> c
 
-let collect_splices l =
+let collect_splices l n =
   let f_opt f (l, a) = function
     | None -> (None, a)
     | Some e -> let (l', a') = f (l , a) e in (Some l', a')  in
@@ -681,13 +836,18 @@ let collect_splices l =
                (arg'::args, a')) args ([], a1) in
         (Lapply(fn', args', t), a2)
     | Lfunction(kind, params, body) ->
-        let (body', a') = f (l, a) body in
+        let (n, vars, splices) = a in
+        let (body', a') = match n with
+          | 1 -> f (l, (n, params @ vars, splices)) body
+          | n -> f (l, (n, vars, splices)) body in
         (Lfunction(kind, params, body'), a')
     | Llet(str, id, arg, body) ->
+        (* FIXME: potentially need to update this; c.f. [Lfunction] case *)
         let (arg', a1) = f (l, a) arg in
         let (body', a2) = f (l, a1) body in
         (Llet(str, id, arg', body'), a2)
     | Lletrec(decl, body) ->
+        (* FIXME: potentially need to update this; c.f. [Lfunction] case *)
         let (body', a1) = f (l, a) body in
         let (decl', a2) = List.fold_right
             (fun (id, exp) (decl, a) ->
@@ -761,7 +921,7 @@ let collect_splices l =
     | Lsend (k, met, obj, args, t) ->
         let r = function
           | (met'::obj'::args', a') -> (Lsend (k, met', obj', args', t), a')
-          | _ -> failwith "Closure.close(Lcode/Lsend)" in
+          | _ -> failwith "Closure.collect_splices(Lsend)" in
         r (List.fold_right
              (fun lam (lst, a) ->
                 let (lam', a') = f (l, a) lam in
@@ -773,22 +933,23 @@ let collect_splices l =
         let (e', a') = f (l, a) e in
         (Lifused (v, e'), a')
     | Lcode e ->
-        let (e', a') = f (l, a) e in
-        (Lcode e', a')
+        let (e', (n, vars, splices)) = f (l, a) e in
+        (Lcode e', (n+1, vars, splices))
     | Lrun ({lc_code; _} as lc) ->
         let (lc_code', a') = f (l, a) lc_code in
         (Lrun {lc with lc_code = lc_code';}, a')
     | Lescape (n, e)  ->
-        let (e', a') = f (l, a) e in
         if n = 1 then
-          (Lsplice(List.length a'), e'::a')
+          let (_, vars, splices) = a in
+          (Lsplice (List.length splices), (n, vars, (e, vars)::splices))
         else
+          let (e', a') = f (l, a) e in
           (Lescape(n, e'), a')
     | Lrebuild ({lc_code; _} as lc) ->
         let (lc_code', a') = f (l, a) lc_code in
         (Lrebuild {lc with lc_code = lc_code';}, a')
-    | Lsplice _ -> failwith "Closure.close(Lcode/Lsplice)" in
-  let (lam, splices) = f (Lambda.lambda_unit, []) l in
+    | Lsplice _ -> failwith "Closure.collect_splices(Lsplice)" in
+  let (lam, (_, _, splices)) = f (Lambda.lambda_unit, (n, [], [])) l in
   (lam, List.rev splices)
 
 (* Perform an inline expansion *)
@@ -1221,35 +1382,27 @@ let rec close fenv cenv = function
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lcode):@ body@ %a@]@."
           Printlambda.lambda body;
-      let unbound_vars =
-        let f = (Lfunction (Curried, [Ident.create "param"], body)) in
-        let (uclos, _) = close_one_function fenv cenv (Ident.create "fun") f in
-        let get_vars = function
-          | Uclosure (_, ul) ->
-              List.fold_left
-                (fun a u -> match u with
-                   | Uvar id -> id::a
-                   | _ -> a)
-                [] ul
-          | _ -> failwith "Closure.close(Lcode): close_one_function didn't return Uclosure"  in
-        get_vars uclos in
-      let free_vars = IdentSet.diff (Lambda.free_variables body) (IdentSet.of_list unbound_vars)
-                      |> IdentSet.elements in
+      let free_vars = Lambda.free_variables body |> IdentSet.elements in
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lcode):@ free_vars@ [%a]@]@."
           (fun ppf -> List.iter (fun id ->  fprintf ppf "%a;@ "
                                     Ident.print id))
           free_vars;
       let cvars = List.filter
-          (fun v -> if Tbl.mem v fenv then
-              match Tbl.find v fenv with
-              | (Value_closure (_, Value_unknown) as approx) ->
-                  if !Clflags.dump_rawlambda then
-                    eprintf "@[Closure.close(Lcode):@ approx@ %a@]@."
-                      Printclambda.approx approx;
-                  false
-              | _ -> true
-            else true)
+          (fun v ->
+             if Tbl.mem v fenv then
+               match Tbl.find v fenv with
+               | (Value_closure (_, Value_unknown) as approx) ->
+                   if !Clflags.dump_rawlambda then
+                     eprintf "@[Closure.close(Lcode):@ approx@ %a@]@."
+                       Printclambda.approx approx;
+                   false
+               | _ -> true
+             else if Tbl.mem v cenv then
+               match Tbl.find v cenv with
+               | Ufreevar _ -> false
+               | _ -> true
+             else true)
           free_vars in
       let uc_offsets = match cvars with
         | [] -> None
@@ -1276,20 +1429,34 @@ let rec close fenv cenv = function
           (fun ppf -> List.iter
               (fun cv -> fprintf ppf "%a@;" Printclambda.clambda cv))
           uc_cvars;
-      let (body', splices) = collect_splices body in
+      let (body', splices) = collect_splices body 1 in
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lcode):@ body':@ %a@ splices: %a@]@."
           Printlambda.lambda body'
-          (fun ppf -> List.iter (fun l -> fprintf ppf "%a " Printlambda.lambda l))
+          (fun ppf -> List.iter (fun (l, fv) ->
+               fprintf ppf "%a@ [fv: %a]"
+                 Printlambda.lambda l
+                 (fun ppf -> List.iter (fun v ->
+                      fprintf ppf "%a;@ " Ident.print v))
+                 fv))
           splices;
-      let (usplices, _) = List.map (close fenv cenv) splices |> List.split in
+      let close_splice (sp, fv) =
+      if !Clflags.dump_rawlambda then
+        eprintf "@[Closure.close(Lcode/close_splice):@ sp:@ %a@ fv: [%a]@]@."
+          Printlambda.lambda sp
+          (fun ppf -> List.iter (fun v ->
+               fprintf ppf "%a;@ " Ident.print v)) fv;
+        let fenv' = List.fold_right Tbl.remove fv fenv in
+        let cenv' = List.fold_right
+            (fun id -> Tbl.add id (Ufreevar id)) fv cenv in
+        let (ul, approx) = close fenv' cenv' sp in
+        ul in
       let ucode = Ucode {uc_code= body';
-                         uc_splices = usplices;
+                         uc_splices = List.map close_splice splices;
                          uc_cvars;
                          uc_offsets;
-                         uc_marshalled_fenv = Marshal.to_string fenv [];
-                         uc_unbound_vars = unbound_vars;} in
-      (Uprim(Prebuild, [ucode], Debuginfo.none), Value_unknown)
+                         uc_marshalled_fenv = Marshal.to_string fenv [];} in
+      (Uprim(Prebuild, [remove_free_vars ucode], Debuginfo.none), Value_unknown)
   | Lrun ({lc_code; lc_offsets; lc_marshalled_fenv; lc_block} as cd) ->
       let pr_fenv ppf tbl =
         let pr ppf tbl =
@@ -1346,7 +1513,7 @@ let rec close fenv cenv = function
       let (ulam, _) = close fenv cenv lam in
       (Uescape ulam, Value_unknown)
   | Lrebuild ({lc_code; lc_offsets; lc_marshalled_fenv; lc_block;
-              lc_splices; lc_splices_count; lc_unbound_vars} as cd) ->
+              lc_splices; lc_splices_count;} as cd) ->
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lrebuild):@ code_description: %a@]@."
           Printlambda.code_description cd;
@@ -1375,8 +1542,7 @@ let rec close fenv cenv = function
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lrebuild):@ after renaming:@ code_description: %a@]@."
           Printlambda.code_description {lc_code; lc_offsets; lc_marshalled_fenv;
-                                        lc_block; lc_splices; lc_splices_count;
-                                        lc_unbound_vars};
+                                        lc_block; lc_splices; lc_splices_count;};
       let pointer_of_block = function
         | Some b -> Uconst(Uconst_ptr (Obj.obj b))
         | None -> failwith "Closure.close(Lrebuild/pointer_of_block): Null pointer" in
@@ -1481,18 +1647,6 @@ let rec close fenv cenv = function
       let body = splice_in_code lc_code in
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lrebuild) body:@ %a@]@." Printlambda.lambda body;
-      let unbound_vars =
-        let f = (Lfunction (Curried, [Ident.create "param"], body)) in
-        let (uclos, _) = close_one_function fenv cenv (Ident.create "fun") f in
-        let get_vars = function
-          | Uclosure (_, ul) ->
-              List.fold_left
-                (fun a u -> match u with
-                   | Uvar id -> id::a
-                   | _ -> a)
-                [] ul
-          | _ -> failwith "Closure.close(Lrebuild): close_one_function didn't return Uclosure"  in
-        get_vars uclos in
       (* the object of the exercise is to lay out each of the splice's
          closure variables in the closure block of the code the splice
          has just been spliced into (by the [splice_in_code] function),
@@ -1544,9 +1698,14 @@ let rec close fenv cenv = function
         eprintf "@[Closure.close(Lrebuild)@ copy_instr: %a@]@."
           (fun ppf -> List.iter (fun i -> Printclambda.clambda ppf i))
           copy_instr;
-      let (body', splices) = collect_splices body in
+      let (body', splices) = collect_splices body 1 in
+      let close_splice (sp, fv) fenv cenv =
+        let fenv' = List.fold_right Tbl.remove fv fenv in
+        let cenv' = List.fold_right
+            (fun id -> Tbl.add id (Ufreevar id)) fv cenv in
+        close fenv' cenv' sp in
       let (usplices, _) =
-        List.map (close fenv' cenv') splices
+        List.map (fun sp -> close_splice sp fenv' cenv') splices
         |> List.map
           (fun (sp, approx) -> match lc_offsets with
              | Some (ep, _) ->
@@ -1562,15 +1721,14 @@ let rec close fenv cenv = function
       let ucode =  Ucode {uc_code=body'; uc_splices = usplices;
                           uc_cvars=uc_cvars @ copy_instr;
                           uc_offsets=lc_offsets';
-                          uc_marshalled_fenv = lc_marshalled_fenv;
-                          uc_unbound_vars = unbound_vars;} in
+                          uc_marshalled_fenv = lc_marshalled_fenv;} in
       if !Clflags.dump_rawlambda then
         eprintf "@[Closure.close(Lrebuild)@ ucode: %a@]@."
           Printclambda.clambda ucode;
       if 0 < List.length usplices then
-        (Uprim(Prebuild, [ucode], Debuginfo.none), Value_unknown)
+        (Uprim(Prebuild, [remove_free_vars ucode], Debuginfo.none), Value_unknown)
       else
-        (ucode, Value_unknown)
+        (remove_free_vars ucode, Value_unknown)
   | Lsplice n -> (Usplice n, Value_unknown)
 
 and close_list fenv cenv = function
@@ -1684,7 +1842,6 @@ and close_functions ?cenv_fv_ref fenv cenv fun_defs =
         arity  = fundesc.fun_arity;
         params = fun_params;
         body   = ubody;
-        contains_escape = false;
         dbg;
       }
     in
@@ -1845,7 +2002,7 @@ let collect_exported_structured_constants a =
     | Ufor (_, u1, u2, _, u3) -> ulam u1; ulam u2; ulam u3
     | Uassign (_, u) -> ulam u
     | Usend (_, u1, u2, ul, _) -> ulam u1; ulam u2; List.iter ulam ul
-    | Ucode _ | Urun _ | Uescape _ | Usplice _ | Ucover _ -> ()
+    | Ucode _ | Urun _ | Uescape _ | Usplice _ | Ufreevar _ -> ()
   in
   approx a
 
@@ -1921,9 +2078,7 @@ let rec adjust_escape_level n lam =
 
 let intro size lam =
   let module Pr = Printlambda in
-  (* if !Clflags.dump_rawlambda then eprintf "@[before adj: %a@]@." Pr.lambda lam; *)
   let lam = adjust_escape_level 0 lam in
-  (* if !Clflags.dump_rawlambda then  eprintf "@[after adj: %a@]@." Pr.lambda lam; *)
   reset ();
   let id = Compilenv.make_symbol None in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));

@@ -158,7 +158,7 @@ let rec lam ppf = function
     fprintf ppf "@[<2>(run@ %a@ (vars at: %#x))@]" one_fun uf (Obj.obj clos_vars)
   | Uescape ul -> fprintf ppf "@[<2>%a@]" lam ul
   | Usplice n -> fprintf ppf "@[<2>(splice: %d)@]" n
-  | Ucover c -> fprintf ppf "@[<2>(cover %s)@]" c
+  | Ufreevar id -> fprintf ppf "@[<2>(free_var %a)@]" Ident.print id
 
 and sequence ppf ulam = match ulam with
   | Usequence(l1, l2) ->
@@ -172,8 +172,7 @@ and one_fun ppf f =
   fprintf ppf "@[<2>(fun@ %s@ %d @[<2>%a@]@ @[<2>%a@]@])"
     f.label f.arity idents f.params lam f.body
 
-and ucode_description ppf {uc_code; uc_splices; uc_cvars; uc_offsets;
-                           uc_unbound_vars; _} =
+and ucode_description ppf {uc_code; uc_splices; uc_cvars; uc_offsets;} =
   let ulams ppf = List.iter (fun ul -> fprintf ppf "%a;@ " lam ul) in
   let pr ppf tbl =
     Tbl.iter (fun id pos -> fprintf ppf "@[%a: %d@]"
@@ -182,10 +181,8 @@ and ucode_description ppf {uc_code; uc_splices; uc_cvars; uc_offsets;
     | Some (id, tbl) -> fprintf ppf "@[%a::@ %a@]" Ident.print id pr tbl
     | None -> fprintf ppf "(empty env)" in
   fprintf ppf
-    "@[<2>(code %a;@ splices: [%a];@ cvars:[%a];@ offsets: %a@ unbound: [%a])@]"
+    "@[<2>(code %a;@ splices: [%a];@ cvars:[%a];@ offsets: %a@)@]"
     Printlambda.lambda uc_code ulams uc_splices ulams uc_cvars pr_tbl uc_offsets
-    (fun ppf -> List.iter (fun id -> fprintf ppf "%a;@ " Ident.print id))
-    uc_unbound_vars
 
 let clambda ppf ulam =
   fprintf ppf "%a@." lam ulam

@@ -1383,8 +1383,7 @@ let rec transl = function
       end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
-  | Ucode{uc_code; uc_splices; uc_cvars; uc_offsets;
-          uc_marshalled_fenv; uc_unbound_vars} ->
+  | Ucode{uc_code; uc_splices; uc_cvars; uc_offsets; uc_marshalled_fenv;} ->
       if !Clflags.dump_rawlambda then
         eprintf "@[Cmmgen(Ucode):@ uc_code: %a@]@." Printlambda.lambda uc_code;
       let lc = {Lambda.lc_code=uc_code;
@@ -1392,8 +1391,7 @@ let rec transl = function
                 lc_marshalled_fenv = uc_marshalled_fenv;
                 lc_block=None;
                 lc_splices_count = List.length uc_splices;
-                lc_splices = [];
-                lc_unbound_vars = uc_unbound_vars} in
+                lc_splices = [];} in
       let s = Marshal.to_string lc [] in
       let b =  Uconst_string s in
       (* unfolding transl_structured_constant *)
@@ -1419,7 +1417,7 @@ let rec transl = function
               [get_field clos 0; Cconst_int 0; Cconst_pointer (val_of_int (Obj.obj block))]))
   | Uescape _ -> failwith "Uescape seen outside of a .<code>. block"
   | Usplice _ -> failwith "Usplice seen outside of a .<code>. block"
-  | Ucover c -> Cconst_symbol (Compilenv.make_symbol (Some c))
+  | Ufreevar _ -> failwith "Ufreevar escaped from Closure.close"
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->

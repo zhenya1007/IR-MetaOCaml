@@ -1,3 +1,5 @@
 let rec h2 n = fun z -> if n = 0 then z else (.<(fun x -> .~(h2 (n-1) (.<x + (.~z)>.))) 1>.)
 
-let puzzle = .<fun a -> Printf.eprintf "fun a ->(...)\n%!"; (.~((fun x -> Printf.eprintf "fun x -> .<x>.\n%!"; .<x>.) (fun x -> Printf.eprintf "fun x -> .<a>.\n%!"; .<a>.))) 0>.;;
+let puzzle = .<fun a -> (.~((fun x -> .<x>.) (fun x -> .<a>.))) 0>.;;
+
+let puzzle' = .<fun a -> Printf.eprintf "fun a ->(...)\n%!"; (.~((fun x -> Printf.eprintf "fun x -> .<x>.\n%!"; .<x>.) (fun x -> Printf.eprintf "fun x -> .<a>.\n%!"; .<a>.))) 0>.;;

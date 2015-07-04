@@ -232,9 +232,7 @@ and code_description = { (* Information for [run] *)
   lc_splices_count : int;
   (* don't strictly need this, but it does make unmarshaling splices easier *)
   lc_splices : code_description list;
-  (* The array of splices for this piece of code (if any)*)
-  lc_unbound_vars : Ident.t list;
-  (*List of idents that are free in this term after closure-conversion (if any)*)}
+  (* The array of splices for this piece of code (if any)*)}
 
 let const_unit = Const_pointer 0
 

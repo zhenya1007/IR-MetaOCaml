@@ -402,7 +402,7 @@ and sequence ppf = function
   | l ->
       lam ppf l
 
-and code_description ppf {lc_code; lc_offsets; lc_block; lc_unbound_vars; _} =
+and code_description ppf {lc_code; lc_offsets; lc_block; _} =
   let pr_field ppf n =
     match lc_block with
     | Some b -> fprintf ppf "(%#x[block:%#x])"
@@ -414,9 +414,7 @@ and code_description ppf {lc_code; lc_offsets; lc_block; lc_unbound_vars; _} =
   let pr_tbl ppf = function
     | Some (id, tbl) -> fprintf ppf "@[%a::@ %a@]" Ident.print id pr tbl
     | None -> fprintf ppf "(empty env)" in
-  fprintf ppf "@[%a@ %a@ [%a]]" lam lc_code pr_tbl lc_offsets
-    (fun ppf -> List.iter (fun id -> fprintf ppf "%a;@ " Ident.print id))
-    lc_unbound_vars
+  fprintf ppf "@[%a@ %a@]" lam lc_code pr_tbl lc_offsets
 
 
 let structured_constant = struct_const

@@ -204,12 +204,15 @@ type lambda =
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
   | Lcode of lambda
-  | Lescape of int * lambda (* the escape: what the user writes *)
+  (* the escape: what the user writes: escape_level * expression *)
+  | Lescape of int * lambda
   | Lrun of code_description (* produced by calling [run_code] *)
-  | Lrebuild of code_description (* process escapes in a code description:
-                                    the escapes are marked with Lsplice (below) *)
-  | Lsplice of int (* what escape turns into, after it's been through
-                                   the compiler once*)
+  (* process escapes in a code description:
+     the escapes are marked with Lsplice (below) *)
+  | Lrebuild of code_description
+  (* what escape turns into, after it's been through the compiler once
+     int is an index_into_list_of_escapes *)
+  | Lsplice of int
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
     sw_consts: (int * lambda) list;     (* Integer cases *)
@@ -239,9 +242,8 @@ and code_description = { (* Information for [run] *)
   lc_splices_count : int;
   (* don't strictly need this, but it does make unmarshalling splices simpler *)
   lc_splices : code_description list;
-  (* The list of splices for this piece of code (if any)*)
-  lc_unbound_vars : Ident.t list;
-  (*List of idents that are free in this term after closure-conversion (if any)*)}
+  (* The list of splices for this piece of code (if any)*)}
+
 
 
 (* Sharing key *)

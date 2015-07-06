@@ -202,7 +202,7 @@ type lambda =
                                     the escapes are marked with Lsplice (below) *)
   | Lsplice of int (* what escape turns into, after it's been through
                                    the compiler once*)
-
+  | Lcover of (int * lambda) list * lambda
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
     sw_consts: (int * lambda) list;     (* Integer cases *)
@@ -302,7 +302,7 @@ let make_key e =
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
     | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ | Lsplice _
     | Lletrec _|Lfunction _
-    | Lfor _ | Lwhile _
+    | Lfor _ | Lwhile _ | Lcover _
 (* Beware: (PR#6412) the event argument to Levent
    may include cyclic structure of type Type.typexpr *)
     | Levent _  ->
@@ -396,7 +396,70 @@ let iter f = function
   | Lescape (_, e) -> f e
   | Lrebuild {lc_code; _} -> f lc_code
   | Lsplice _ -> ()
+  | Lcover (vs, e) ->
+      List.iter (fun (_, e) -> f e) vs;
+      f e
 
+let rec map f = function
+    Lvar _ as v -> f v
+  | Lconst _ as c -> f c
+  | Lapply(fn, args, a) ->
+      Lapply (map f fn, List.map (map f) args, a)
+  | Lfunction(kind, params, body) ->
+      Lfunction (kind, params, map f body)
+  | Llet(str, id, arg, body) ->
+      Llet (str, id, map f arg, map f body)
+  | Lletrec(decl, body) ->
+      Lletrec (List.map (fun (id, exp) -> (id, map f exp)) decl,
+               map f body)
+  | Lprim(p, args) ->
+      Lprim (p, List.map (map f) args)
+  | Lswitch(arg, sw) ->
+      Lswitch
+        (map f arg,
+         {sw with sw_consts =
+                    List.map (fun (key, case) -> (key, map f case)) sw.sw_consts;
+                  sw_blocks =
+                    List.map (fun (key, case) -> (key, map f case)) sw.sw_blocks;
+                  sw_failaction = map_opt f sw.sw_failaction;})
+  | Lstringswitch (arg,cases,default) ->
+      Lstringswitch (map f arg,
+                     List.map (fun (a,act) -> (a, map f act)) cases,
+                     map_opt f default)
+  | Lstaticraise (a, args) ->
+      Lstaticraise (a, List.map (map f) args)
+  | Lstaticcatch(e1, vs, e2) ->
+      Lstaticcatch (map f e1, vs, map f e2)
+  | Ltrywith(e1, exn, e2) ->
+      Ltrywith (map f e1, exn, map f e2)
+  | Lifthenelse(e1, e2, e3) ->
+      Lifthenelse (map f e1, map f e2, map f e3)
+  | Lsequence(e1, e2) ->
+      Lsequence (map f e1, map f e2)
+  | Lwhile(e1, e2) ->
+      Lwhile (map f e1, map f e2)
+  | Lfor(v, e1, e2, dir, e3) ->
+      Lfor (v, map f e1, map f e2, dir, map f e3)
+  | Lassign(id, e) ->
+      Lassign (id, map f e)
+  | Lsend (k, met, obj, args, a) ->
+      Lsend (k, map f met, map f obj, List.map (map f) args, a)
+  | Levent (lam, evt) ->
+      Levent (map f lam, evt)
+  | Lifused (v, e) ->
+      Lifused (v, map f e)
+  | Lcode e -> Lcode (map f e)
+  | Lrun cd ->
+      Lrun {cd with lc_code = map f cd.lc_code}
+  | Lescape (n, e) -> Lescape (n, map f e)
+  | Lrebuild cd -> Lrebuild {cd with lc_code = map f cd.lc_code}
+  | Lsplice _ as s -> f s
+  | Lcover (vs, lam) ->
+      Lcover (List.map (fun (n, v) -> (n, map f v)) vs,
+              map f lam)
+and map_opt f = function
+  | None -> None
+  | Some e -> Some (map f e)
 
 module IdentSet =
   Set.Make(struct
@@ -428,7 +491,7 @@ let free_ids get l =
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
     | Lifthenelse _ | Lsequence _ | Lwhile _
     | Lsend _ | Levent _ | Lifused _
-    | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ | Lsplice _ -> ()
+    | Lcode _ | Lrun _ | Lescape _ | Lrebuild _ | Lsplice _ | Lcover _ -> ()
   in free l; !fv
 
 let free_variables l =
@@ -537,7 +600,9 @@ let subst_lambda s lam =
   | Lescape (n, c) -> Lescape (n, subst c)
   | Lrebuild cd -> Lrebuild (subst_code_description cd)
   | Lsplice _ as e -> e
-
+  | Lcover (vs, lam) ->
+      Lcover (List.map (fun (n, v) -> (n, subst v)) vs,
+              subst lam)
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
   and subst_strcase (key, case) = (key, subst case)

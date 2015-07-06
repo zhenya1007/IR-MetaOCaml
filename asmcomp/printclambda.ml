@@ -155,10 +155,17 @@ let rec lam ppf = function
   | Ucode ucd ->
       ucode_description ppf ucd
   | Urun (uf, clos_vars) ->
-    fprintf ppf "@[<2>(run@ %a@ (vars at: %#x))@]" one_fun uf (Obj.obj clos_vars)
+      fprintf ppf "@[<2>(run@ %a@ (vars at: %#x))@]"
+        one_fun uf (Obj.obj clos_vars)
   | Uescape ul -> fprintf ppf "@[<2>%a@]" lam ul
   | Usplice n -> fprintf ppf "@[<2>(splice: %d)@]" n
   | Ufreevar id -> fprintf ppf "@[<2>(free_var %a)@]" Ident.print id
+  | Ucover (vs, ul) ->
+      fprintf ppf "@[<2>(cover [%a]@ %a)@]"
+        (fun ppf -> List.iter (fun (n, ul) ->
+             fprintf ppf "%d: %a;@ " n lam ul))
+        vs
+        lam ul
 
 and sequence ppf ulam = match ulam with
   | Usequence(l1, l2) ->

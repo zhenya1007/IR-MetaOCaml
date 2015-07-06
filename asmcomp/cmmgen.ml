@@ -1417,7 +1417,12 @@ let rec transl = function
               [get_field clos 0; Cconst_int 0; Cconst_pointer (val_of_int (Obj.obj block))]))
   | Uescape _ -> failwith "Uescape seen outside of a .<code>. block"
   | Usplice _ -> failwith "Usplice seen outside of a .<code>. block"
-  | Ufreevar _ -> failwith "Ufreevar escaped from Closure.close"
+  | Ufreevar _ -> int_const 42
+  | Ucover (vs, ulam) ->
+      bind "expr" (transl ulam) (fun clos ->
+          List.fold_left (fun cont (n, u) ->
+              Csequence (set_field clos n (transl u), cont))
+            clos vs)
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->

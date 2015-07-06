@@ -213,6 +213,7 @@ type lambda =
   (* what escape turns into, after it's been through the compiler once
      int is an index_into_list_of_escapes *)
   | Lsplice of int
+  | Lcover of (int * lambda) list * lambda
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
     sw_consts: (int * lambda) list;     (* Integer cases *)
@@ -256,6 +257,7 @@ val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 
 val iter: (lambda -> unit) -> lambda -> unit
+val map: (lambda -> lambda) -> lambda -> lambda
 module IdentSet: Set.S with type elt = Ident.t
 val free_variables: lambda -> IdentSet.t
 val free_methods: lambda -> IdentSet.t

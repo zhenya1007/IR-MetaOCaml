@@ -395,6 +395,11 @@ let rec lam ppf = function
         code_description cd splices lc_splices
   | Lsplice n ->
       fprintf ppf "@[<2>(splice:@ %d)@]" n
+  | Lcover (vs, expr) ->
+      fprintf ppf "@[<2>(cover:@ [%a] %a)@]"
+        (fun ppf -> List.iter (fun (n, e) -> fprintf ppf "%d: %a;@ " n lam e))
+        vs
+        lam expr
 
 and sequence ppf = function
   | Lsequence(l1, l2) ->

@@ -44,7 +44,8 @@ let process_code block =
 
   (* [size] above refers to "the size of the global block", i.e.,
   where module-global variables are stored; since we are not storing
-  module-global variables, size is zero *)
+     module-global variables, size is zero *)
+
 
 let () = Callback.register "Metaocaml.run_code" run_code
 let () = Callback.register "Metaocaml.process_code" process_code

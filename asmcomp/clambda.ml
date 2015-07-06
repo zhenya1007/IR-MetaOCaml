@@ -58,6 +58,7 @@ type ulambda =
   | Uescape of ulambda
   | Usplice of int
   | Ufreevar of Ident.t
+  | Ucover of (int * ulambda) list * ulambda
 
 and ufunction = {
   label  : function_label;

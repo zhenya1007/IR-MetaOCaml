@@ -1,0 +1,12 @@
+opam-version: "1"
+version: "4.02.1"
+local: "/home/zhenya/src/ocaml"
+configure: ["-with-debug-runtime"]
+make: ["check_git_branch" "world" "world.opt" "install" "ocamlnat" "installocamlnat"]
+packages: [
+  "base-unix"
+  "base-bigarray"
+  "base-threads"
+  "base-metaocaml-ocamlfind"
+]
+env: [[CAML_LD_LIBRARY_PATH = "%{lib}%/stublibs"]]

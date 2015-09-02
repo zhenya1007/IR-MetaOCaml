@@ -1,15 +1,29 @@
 #!/bin/sh
+set +x
 
 t=${HOME}/src/ocaml
-p=${HOME}/prefix/ocaml-meta/
+p=${HOME}/src/ocaml
 
-# echo $t/boot/ocamlrun   $t/ocamlc -I $t/stdlib/ -nostdlib  -c $1 1>&2
-# $t/boot/ocamlrun   $t/ocamlc -I $t/stdlib/ -nostdlib  -c $1
+mode=unknown
+for a; do
+    case $a in
+        -c|-where) mode=compile; break
+            ;;
+        -o) mode=link; break
+                ;;
+    esac
+done
 
-$p/bin/ocamlc -c $1
-
-# echo $t/boot/ocamlrun  $t/ocamlc  $t/compilerlibs/ocamlcommon.cma $t/compilerlibs/ocamlbytecomp.cma $t/compilerlibs/ocamltoplevel.cma $t/bytecomp/metaocaml.cmo $(basename $1 .ml).cmo $t/stdlib/stdlib.cma $t/stdlib/std_exit.cmo  -linkall 1>&2
-# $t/boot/ocamlrun  $t/ocamlc  -nostdlib $t/compilerlibs/ocamlcommon.cma $t/compilerlibs/ocamlbytecomp.cma $t/compilerlibs/ocamltoplevel.cma $t/bytecomp/metaocaml.cmo $(basename $1 .ml).cmo $t/stdlib/stdlib.cma $t/stdlib/std_exit.cmo  -linkall
-# this fails with error "cannot find file: std_exit.cmo" (???)
-
-$p/bin/ocamlc  $t/compilerlibs/ocamlcommon.cma $t/compilerlibs/ocamlbytecomp.cma $t/compilerlibs/ocamltoplevel.cma $t/bytecomp/metaocaml.cmo $(basename $1 .ml).cmo -linkall
+case $mode in
+    compile) $p/ocamlc $@
+             ;;
+    link) $p/ocamlc  $t/compilerlibs/ocamlcommon.cma \
+                     $t/compilerlibs/ocamlbytecomp.cma \
+                     $t/compilerlibs/ocamltoplevel.cma \
+                     $t/bytecomp/metaocaml.cmo \
+                     $@ \
+                     -linkall
+          ;;
+    *) echo The metaocamlc wrapper script could not determine whether ocamlc is being called to compile or link 1>&2; exit 1
+       ;;
+esac

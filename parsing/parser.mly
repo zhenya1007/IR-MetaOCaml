@@ -445,7 +445,7 @@ conflicts.
 The precedences must be listed from low to high.
 */
 
-%right RUN ESCAPE
+%right RUN
 %nonassoc IN
 %nonassoc below_SEMI
 %nonassoc SEMI                          /* below EQUAL ({lbl=...; lbl=...}) */
@@ -481,16 +481,17 @@ The precedences must be listed from low to high.
 %nonassoc SHARP                         /* simple_expr/toplevel_directive */
 %nonassoc below_DOT
 %nonassoc DOT
+/* Give Escape a high precedence */
+%right  ESCAPE	  
+
 /* Finally, the first tokens of simple_expr are above everything else. */
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT INT32 INT64
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
           LBRACKETPERCENT LBRACKETPERCENTPERCENT
-/* meta-brackets are kind of like brackets/parens
-                   , so give them a high precedence
-                   ; I may need to revisit this decision */
+	  
 %nonassoc LMETA
-
+	 
 /* Entry points */
 
 %start implementation                   /* for implementation files */

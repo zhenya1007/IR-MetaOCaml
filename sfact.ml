@@ -12,7 +12,7 @@ let fact = Program ([Declaration
 					Mul(Var"x",
 					    (App ("fact", Sub(Var "x",Int 1))))))
 		   ],
-		    App ("fact", Int 10))
+		    App ("fact", Int 0))
 
 exception Yikes
 

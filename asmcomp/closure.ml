@@ -824,14 +824,14 @@ let collect_splices l n =
         let (body', a2) = f (l, a1) body in
         (Llet(str, id, arg', body'), a2)
     | Lletrec(decl, body) ->
-        let (body', a1) = f (l, a) body in
-        let (decl', a2) = List.fold_right
+        let (decl', a1) = List.fold_right
             (fun (id, exp) (decl, a) ->
 	       let (n, vars, splices) = a in
                let (exp', a') = match n with
 	         | 1 -> f (l, (n, id :: vars, splices)) exp
 	         | _ -> f (l, (n, vars, splices)) exp in
-               ((id,exp')::decl, a')) decl ([], a1) in
+               ((id,exp')::decl, a')) decl ([], a) in
+        let (body', a2) = f (l, a1) body in
         (Lletrec(decl', body'), a2)
     | Lprim(p, args) ->
         let (args', a') = List.fold_right
@@ -1433,6 +1433,10 @@ let rec close fenv cenv = function
             (fun id -> Tbl.add id (Ufreevar id)) fv cenv in
         let (ul, approx) = close fenv' cenv' sp in
         let cvs = collect_cover_vars ul in
+	if !Clflags.dump_rawlambda then
+          eprintf "@[Closure.close(Lcode/close_splice): cover vars: [%a]@]@."
+	   (fun ppf  -> List.iter (fun (_, ul) -> Printclambda.clambda ppf ul))
+	    cvs;
         (cvs, ul) in
       let (covers, uc_splices) = List.map close_splice splices |> List.split in
       let (_, tbl) = List.fold_left

@@ -816,7 +816,7 @@ let collect_splices l n =
         let (n, vars, splices) = a in
         let (body', a') = match n with
           | 1 -> f (l, (n, params @ vars, splices)) body
-          | n -> f (l, (n, vars, splices)) body in
+          | _ -> f (l, (n, vars, splices)) body in
         (Lfunction(kind, params, body'), a')
     | Llet(str, id, arg, body) ->
         (* FIXME: potentially need to update this; c.f. [Lfunction] case *)
@@ -824,11 +824,13 @@ let collect_splices l n =
         let (body', a2) = f (l, a1) body in
         (Llet(str, id, arg', body'), a2)
     | Lletrec(decl, body) ->
-        (* FIXME: potentially need to update this; c.f. [Lfunction] case *)
         let (body', a1) = f (l, a) body in
         let (decl', a2) = List.fold_right
             (fun (id, exp) (decl, a) ->
-               let (exp', a') = f (l, a) exp in
+	       let (n, vars, splices) = a in
+               let (exp', a') = match n with
+	         | 1 -> f (l, (n, id :: vars, splices)) exp
+	         | _ -> f (l, (n, vars, splices)) exp in
                ((id,exp')::decl, a')) decl ([], a1) in
         (Lletrec(decl', body'), a2)
     | Lprim(p, args) ->
